@@ -53,7 +53,8 @@ textarea.control{min-height:132px;resize:vertical}
 button[aria-disabled="true"]{opacity:.75}
 @media(max-width:780px){.grid2{grid-template-columns:1fr}.report-actions button{flex:1}}
 
-/* Keep the sticky desktop header from covering forms on compact viewports. */
+/* Keep the site header in document flow so it never covers forms while scrolling. */
+header.wrap{position:relative!important;top:auto!important}
 #matcher,section[id]{scroll-margin-top:96px}
 @media(max-width:1240px){
   header.wrap{position:relative!important;top:auto!important}
