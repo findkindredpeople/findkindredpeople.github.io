@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /kindred-pages/
-Sitemap: https://findkindredpeople.github.io/sitemap.xml
+Sitemap: https://findkindredpeople.com/sitemap.xml
