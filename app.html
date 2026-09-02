@@ -7,8 +7,8 @@
   <meta name="description" content="Meet adults nearby who are also building friendship and belonging in a new city.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
-  <link rel="stylesheet" href="app.css">
-  <script type="module" src="kindred-app.js"></script>
+  <link rel="stylesheet" href="app.css?v=20260902-2">
+  <script type="module" src="kindred-app.js?v=20260902-2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -60,10 +60,6 @@
         <section class="view" data-panel="profile" hidden>
           <span class="eyebrow" data-i18n="yourProfileUpper">YOUR PROFILE</span><h1 data-i18n="profileTitle">Help the right people recognize you</h1>
           <form id="profileForm" class="profile-form card">
-            <div class="profile-photo-field">
-              <div class="profile-photo-preview" aria-hidden="true"><img id="profilePhotoPreview" alt="" hidden><span id="profilePhotoFallback">+</span></div>
-              <label><span data-i18n="profilePhoto">Profile photo</span><input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp"><span class="hint" data-i18n="photoHint">Optional. JPG, PNG or WebP, up to 5 MB.</span></label>
-            </div>
             <label><span data-i18n="displayName">Display name</span><input id="displayName" minlength="2" maxlength="50" required></label>
             <div class="two"><label><span data-i18n="city">City</span><input id="profileCity" maxlength="80" required></label><label><span data-i18n="country">Country</span><input id="profileCountry" maxlength="80" required></label></div>
             <label><span data-i18n="shortIntro">Short introduction</span><textarea id="bio" minlength="30" maxlength="500" required data-i18n-placeholder="bioPlaceholder" placeholder="What kind of friendship and activities are you looking for?"></textarea></label>
