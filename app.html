@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kindred Community</title>
+  <meta name="description" content="Meet adults nearby who are also building friendship and belonging in a new city.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://findkindredpeople.com/app.html">
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="kindred-app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html">Kindred ✦</a>
+    <span class="app-label">Community</span>
+    <button id="authButton" class="button">Sign in with Google</button>
+  </header>
+
+  <main class="shell">
+    <aside class="sidebar" aria-label="Application navigation">
+      <button class="nav-item active" data-view="discover">Discover</button>
+      <button class="nav-item" data-view="connections">Connections <span id="requestCount"></span></button>
+      <button class="nav-item" data-view="messages">Messages</button>
+      <button class="nav-item" data-view="profile">My profile</button>
+      <a class="nav-item" href="safety.html">Safety guide</a>
+    </aside>
+
+    <div class="workspace">
+      <section id="signedOut" class="welcome card">
+        <span class="eyebrow">ADULT COMMUNITY</span>
+        <h1>Meet people at a comfortable pace.</h1>
+        <p>Create a simple profile, discover adults with shared interests, and connect only when both people agree.</p>
+        <button class="button" data-signin>Sign in to begin</button>
+        <p class="fine">Kindred never asks for an exact home address. You must be 18 or older.</p>
+      </section>
+
+      <div id="signedIn" hidden>
+        <section class="view" data-panel="discover">
+          <div class="section-head"><div><span class="eyebrow">DISCOVER</span><h1>People near your rhythm</h1></div><button id="refreshProfiles" class="secondary">Refresh</button></div>
+          <div class="filters card"><label>City<input id="filterCity" autocomplete="address-level2" placeholder="Berlin"></label><label>Interest<input id="filterInterest" placeholder="Walking, books, language exchange"></label><button id="applyFilters" class="button">Find people</button></div>
+          <p id="discoverStatus" class="status" role="status"></p>
+          <div id="profiles" class="cards"></div>
+        </section>
+
+        <section class="view" data-panel="connections" hidden>
+          <span class="eyebrow">CONNECTIONS</span><h1>Requests and connections</h1>
+          <h2>Requests received</h2><div id="incoming" class="stack"></div>
+          <h2>Your connections</h2><div id="accepted" class="stack"></div>
+          <h2>Sent requests</h2><div id="outgoing" class="stack"></div>
+        </section>
+
+        <section class="view" data-panel="messages" hidden>
+          <span class="eyebrow">PRIVATE MESSAGES</span><h1>Conversations</h1>
+          <p class="fine">Messaging becomes available only after a request is accepted.</p>
+          <div class="message-layout"><div id="conversationList" class="stack"></div><section id="conversation" class="conversation card"><p>Select a connection to start.</p></section></div>
+        </section>
+
+        <section class="view" data-panel="profile" hidden>
+          <span class="eyebrow">YOUR PROFILE</span><h1>Help the right people recognize you</h1>
+          <form id="profileForm" class="profile-form card">
+            <label>Display name<input id="displayName" minlength="2" maxlength="50" required></label>
+            <div class="two"><label>City<input id="profileCity" maxlength="80" required></label><label>Country<input id="profileCountry" maxlength="80" required></label></div>
+            <label>Short introduction<textarea id="bio" minlength="30" maxlength="500" required placeholder="What kind of friendship and activities are you looking for?"></textarea></label>
+            <label>Interests <span class="hint">separate with commas</span><input id="interests" maxlength="300" required placeholder="walking, books, coffee"></label>
+            <label>Languages <span class="hint">separate with commas</span><input id="languages" maxlength="200" required placeholder="English, Ukrainian"></label>
+            <label>Typical availability<select id="availability"><option>Weekday evenings</option><option>Weekday daytime</option><option>Weekends</option><option>Flexible</option></select></label>
+            <label class="check"><input id="adultConfirm" type="checkbox" required> I confirm that I am at least 18 years old.</label>
+            <label class="check"><input id="activeProfile" type="checkbox" checked> Show my profile in Discover.</label>
+            <button class="button" type="submit">Save profile</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="reportDialog"><form id="reportForm" method="dialog"><h2>Report or block</h2><p id="reportTarget"></p><label>Reason<select id="reportReason" required><option value="">Choose a reason</option><option>Harassment or hate</option><option>Privacy or impersonation</option><option>Spam or fraud</option><option>Unsafe behaviour</option><option>Other</option></select></label><label>Details<textarea id="reportDetails" minlength="20" maxlength="1000" required></textarea></label><label class="check"><input id="alsoBlock" type="checkbox" checked> Also block this person</label><div class="dialog-actions"><button value="cancel">Cancel</button><button id="submitReport" class="button" value="default">Submit privately</button></div></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
