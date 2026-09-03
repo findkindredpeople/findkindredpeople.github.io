@@ -94,9 +94,15 @@ service cloud.firestore {
         && notBlocked(connection(connectionId))
         && connection(connectionId).agreements is map
         && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
-        && request.resource.data.keys().hasOnly(['senderId','text','createdAt'])
+        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','createdAt'])
         && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 2000;
+        && request.resource.data.get('text', '') is string
+        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '')
+          || (request.resource.data.get('text', '') == ''
+            && request.resource.data.get('audioData', '') is string && request.resource.data.get('audioData', '').size() >= 1 && request.resource.data.get('audioData', '').size() <= 180000
+            && request.resource.data.get('audioData', '').matches('data:audio/(webm|mp4|ogg).*;base64,.*')
+            && request.resource.data.get('audioType', '') is string && request.resource.data.get('audioType', '').matches('audio/(webm|mp4|ogg).*')
+            && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20));
       allow update, delete: if false;
     }
     match /blocks/{id} {
