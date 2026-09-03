@@ -1,0 +1,19 @@
+{
+  "id": "/app.html",
+  "name": "Kindred Community",
+  "short_name": "Kindred",
+  "description": "Find people who build friendship the way you do.",
+  "start_url": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f3e8",
+  "theme_color": "#f8f3e8",
+  "icons": [
+    {
+      "src": "/kindred-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
