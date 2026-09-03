@@ -65,6 +65,15 @@ service cloud.firestore {
         && data.statusBy.keys().hasOnly([request.auth.uid])
         && data.statusBy[request.auth.uid] == 'accepted';
     }
+    function validVideoCall(data) {
+      return data is map
+        && data.keys().hasOnly(['roomUrl','status','createdBy','respondedBy','respondedAt'])
+        && data.roomUrl is string
+        && data.roomUrl.matches('https://meet\\.jit\\.si/kindred-[A-Za-z0-9-]{20,80}')
+        && data.status == 'ringing'
+        && data.createdBy == request.auth.uid
+        && data.respondedBy == '' && data.respondedAt == '';
+    }
     function connection(id) { return get(/databases/$(database)/documents/connections/$(id)).data; }
     function notBlocked(data) {
       return !exists(/databases/$(database)/documents/blocks/$(data.participants[0] + '_' + data.participants[1]))
@@ -106,25 +115,36 @@ service cloud.firestore {
         && notBlocked(connection(connectionId))
         && connection(connectionId).agreements is map
         && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
-        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','plan','createdAt'])
+        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','plan','call','createdAt'])
         && request.resource.data.senderId == request.auth.uid
         && request.resource.data.get('text', '') is string
-        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '' && request.resource.data.get('plan', null) == null)
+        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '' && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
           || (request.resource.data.get('text', '') == ''
             && request.resource.data.get('audioData', '') is string && request.resource.data.get('audioData', '').size() >= 1 && request.resource.data.get('audioData', '').size() <= 180000
             && request.resource.data.get('audioData', '').matches('data:audio/(webm|mp4|ogg).*;base64,.*')
             && request.resource.data.get('audioType', '') is string && request.resource.data.get('audioType', '').matches('audio/(webm|mp4|ogg).*')
             && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20
-            && request.resource.data.get('plan', null) == null)
+            && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
           || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
-            && validMeetingPlan(request.resource.data.plan)));
-      allow update: if participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
+            && validMeetingPlan(request.resource.data.plan) && request.resource.data.get('call', null) == null)
+          || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
+            && request.resource.data.get('plan', null) == null && validVideoCall(request.resource.data.call)));
+      allow update: if (participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
         && resource.data.plan is map && request.auth.uid != resource.data.senderId
         && !(request.auth.uid in resource.data.plan.statusBy)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plan'])
         && request.resource.data.plan.diff(resource.data.plan).affectedKeys().hasOnly(['statusBy'])
         && request.resource.data.plan.statusBy.diff(resource.data.plan.statusBy).affectedKeys().hasOnly([request.auth.uid])
-        && request.resource.data.plan.statusBy[request.auth.uid] in ['accepted','declined'];
+        && request.resource.data.plan.statusBy[request.auth.uid] in ['accepted','declined'])
+        || (participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
+        && resource.data.call is map && resource.data.call.status == 'ringing'
+        && request.auth.uid != resource.data.senderId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['call'])
+        && request.resource.data.call.diff(resource.data.call).affectedKeys().hasOnly(['status','respondedBy','respondedAt'])
+        && request.resource.data.call.status in ['accepted','declined','missed']
+        && request.resource.data.call.respondedBy == request.auth.uid
+        && request.resource.data.call.respondedAt is string
+        && request.resource.data.call.respondedAt.size() >= 10 && request.resource.data.call.respondedAt.size() <= 50);
       allow delete: if false;
     }
     match /blocks/{id} {
