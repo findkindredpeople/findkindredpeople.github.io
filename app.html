@@ -7,8 +7,8 @@
   <meta name="description" content="Meet adults nearby who are also building friendship and belonging in a new city.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
-  <link rel="stylesheet" href="app.css?v=20260903-23">
-  <script type="module" src="kindred-app.js?v=20260903-27"></script>
+  <link rel="stylesheet" href="app.css?v=20260903-24">
+  <script type="module" src="kindred-app.js?v=20260903-28"></script>
 </head>
 <body>
   <header class="topbar">
@@ -42,7 +42,7 @@
       <div id="signedIn" hidden>
         <section class="view" data-panel="discover">
           <div class="section-head"><div><span class="eyebrow" data-i18n="discoverUpper">DISCOVER</span><h1 data-i18n="discoverTitle">People near your rhythm</h1></div><button id="refreshProfiles" class="secondary" data-i18n="refresh">Refresh</button></div>
-          <div class="filters card"><label><span data-i18n="searchMode">Search mode</span><select id="filterMode"><option value="nearby" data-i18n="nearbyMode">Nearby Kindred</option><option value="global" data-i18n="globalMode" selected>Global Kindred</option><option value="newcity" data-i18n="newCityMode">New City Mode</option></select></label><label><span data-i18n="city">City</span><input id="filterCity" autocomplete="address-level2" data-i18n-placeholder="cityPlaceholder" placeholder="Enter your city"></label><label><span data-i18n="interest">Interest</span><input id="filterInterest" data-i18n-placeholder="interestPlaceholder" placeholder="Walking, books, language exchange"></label><button id="applyFilters" class="button" data-i18n="findPeople">Find people</button></div>
+          <div class="filters card"><label><span data-i18n="searchMode">Search mode</span><select id="filterMode"><option value="nearby" data-i18n="nearbyMode">Nearby Kindred</option><option value="global" data-i18n="globalMode" selected>Global Kindred</option><option value="newcity" data-i18n="newCityMode">New City Mode</option></select></label><label><span data-i18n="city">City</span><input id="filterCity" autocomplete="address-level2" data-i18n-placeholder="cityPlaceholder" placeholder="Enter your city"></label><label><span data-i18n="interest">Interest</span><input id="filterInterest" data-i18n-placeholder="interestPlaceholder" placeholder="Walking, books, language exchange"></label><label><span data-i18n="language">Language</span><input id="filterLanguage" placeholder="English"></label><label><span data-i18n="contactFrequency">Communication rhythm</span><select id="filterRhythm"><option value="" data-i18n="flexible">Flexible</option><option value="daily" data-i18n="daily">Daily</option><option value="fewWeekly" data-i18n="fewTimesWeek">A few times a week</option><option value="weekly" data-i18n="weekly">Weekly</option></select></label><button id="applyFilters" class="button" data-i18n="findPeople">Find people</button></div>
           <p id="discoverStatus" class="status" role="status"></p>
           <div id="profiles" class="cards"></div>
         </section>
