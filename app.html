@@ -13,8 +13,8 @@
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="app.css?v=20260903-26">
-  <script type="module" src="kindred-app.js?v=20260903-33"></script>
+  <link rel="stylesheet" href="app.css?v=20260903-27">
+  <script type="module" src="kindred-app.js?v=20260903-34"></script>
 </head>
 <body>
   <header class="topbar">
@@ -27,6 +27,7 @@
     <label class="language"><span class="sr-only" data-i18n="language">Language</span><select id="languageSelect" aria-label="Language"><option value="en">English</option><option value="ru">Русский</option><option value="uk">Українська</option><option value="de">Deutsch</option><option value="ar">العربية</option></select></label>
     <button id="authButton" class="button" data-i18n="signIn">Sign in with Google</button>
   </header>
+  <aside id="installBanner" class="install-banner" hidden aria-live="polite"><img src="kindred-icon.svg" alt=""><div><strong id="installBannerTitle">Install Kindred</strong><p id="installBannerText">Add Community to your home screen for faster access.</p></div><button id="installBannerButton" class="button" type="button">Install</button><button id="dismissInstallBanner" class="install-dismiss" type="button" aria-label="Close">×</button></aside>
 
   <main class="shell">
     <aside class="sidebar" aria-label="Application navigation">
