@@ -289,7 +289,7 @@ $("#installKindred").addEventListener("click",requestKindredInstall);
 $("#installBannerButton").addEventListener("click",requestKindredInstall);
 $("#dismissInstallBanner").addEventListener("click",()=>{localStorage.setItem("kindred_install_banner_dismissed","yes");$("#installBanner").hidden=true});
 $("#reportForm").addEventListener("submit",submitReport);
-$("#languageSelect").addEventListener("change",event=>applyLanguage(event.target.value));
+$("#languageSelect").addEventListener("change",event=>{applyLanguage(event.target.value);if(state.user&&state.currentPanel==="discover")loadProfiles()});
 document.addEventListener("pointerdown",unlockNotificationSound,{once:true});
 document.addEventListener("keydown",unlockNotificationSound,{once:true});
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();pendingInstallPrompt=event;$("#installKindred").hidden=false;updateInstallBanner()});
