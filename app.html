@@ -7,8 +7,8 @@
   <meta name="description" content="Meet adults nearby who are also building friendship and belonging in a new city.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
-  <link rel="stylesheet" href="app.css?v=20260903-15">
-  <script type="module" src="kindred-app.js?v=20260903-20"></script>
+  <link rel="stylesheet" href="app.css?v=20260903-17">
+  <script type="module" src="kindred-app.js?v=20260903-22"></script>
 </head>
 <body>
   <header class="topbar">
@@ -25,6 +25,7 @@
       <button class="nav-item active" data-view="discover" data-i18n="discover">Discover</button>
       <button class="nav-item" data-view="connections"><span data-i18n="connections">Connections</span> <span id="requestCount"></span></button>
       <button class="nav-item" data-view="messages"><span data-i18n="messages">Messages</span> <span id="unreadMessageCount" class="notification-badge" hidden></span></button>
+      <button class="nav-item" data-view="growing" id="growingNavLabel">Growing Friendships</button>
       <button class="nav-item" data-view="profile" data-i18n="myProfile">My profile</button>
       <a class="nav-item" href="safety.html" data-i18n="safetyGuide">Safety guide</a>
     </aside>
@@ -58,6 +59,13 @@
           <span class="eyebrow" data-i18n="privateMessages">PRIVATE MESSAGES</span><h1 data-i18n="conversations">Conversations</h1>
           <p class="fine" data-i18n="messageRule">Messaging becomes available only after a request is accepted.</p>
           <div class="message-layout"><div id="conversationList" class="stack"></div><section id="conversation" class="conversation card"><p data-i18n="selectConnection">Select a connection to start.</p></section></div>
+        </section>
+
+        <section class="view" data-panel="growing" hidden>
+          <span class="eyebrow" id="growingEyebrow">GROWING FRIENDSHIPS</span>
+          <h1 id="growingTitle">Friendships you both chose to continue</h1>
+          <p id="growingIntro">These connections completed the mutual Kindred Journey decision.</p>
+          <div id="growingFriendships" class="growing-grid"></div>
         </section>
 
         <section class="view" data-panel="profile" hidden>
