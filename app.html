@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="app.css?v=20260903-27">
-  <script type="module" src="kindred-app.js?v=20260903-35"></script>
+  <script type="module" src="kindred-app.js?v=20260903-36"></script>
 </head>
 <body>
   <header class="topbar">
@@ -32,6 +32,7 @@
   <main class="shell">
     <aside class="sidebar" aria-label="Application navigation">
       <button class="nav-item active" data-view="discover" data-i18n="discover">Discover</button>
+      <button class="nav-item" data-view="favorites"><span id="favoritesNavLabel">Favorites</span> <span id="favoritesCount"></span></button>
       <button class="nav-item" data-view="connections"><span data-i18n="connections">Connections</span> <span id="requestCount"></span></button>
       <button class="nav-item" data-view="messages"><span data-i18n="messages">Messages</span> <span id="unreadMessageCount" class="notification-badge" hidden></span></button>
       <button class="nav-item" data-view="growing" id="growingNavLabel">Growing Friendships</button>
@@ -63,6 +64,13 @@
           <h2 data-i18n="yourConnections">Your connections</h2><div id="accepted" class="stack"></div>
           <h2 data-i18n="sentRequests">Sent requests</h2><div id="outgoing" class="stack"></div>
           <h2 id="blockedTitle">Blocked people</h2><p id="blockedIntro" class="fine">Blocked people cannot contact you or appear in Discover.</p><div id="blockedPeople" class="stack"></div>
+        </section>
+
+        <section class="view" data-panel="favorites" hidden>
+          <span class="eyebrow" id="favoritesEyebrow">FAVORITES</span>
+          <h1 id="favoritesTitle">People you want to remember</h1>
+          <p id="favoritesIntro">Save a profile without sending a connection request.</p>
+          <div id="favoriteProfiles" class="cards"></div>
         </section>
 
         <section class="view" data-panel="messages" hidden>
