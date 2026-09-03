@@ -6,14 +6,35 @@ service cloud.firestore {
     function moderator() { return signedIn() && exists(/databases/$(database)/documents/moderators/$(request.auth.uid)); }
     function participant(data) { return signedIn() && request.auth.uid in data.participants; }
     function validProfile() {
-      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','photoURL','active','adultConfirmed','updatedAt'])
+      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','friendshipGoal','connectionMode','contactFrequency','socialFormat','communicationStyle','socialEnergy','spontaneousInvites','conversationDepth','newCityRole','timeZone','intercultural','photoURL','active','adultConfirmed','updatedAt'])
         && request.resource.data.displayName is string && request.resource.data.displayName.size() >= 2 && request.resource.data.displayName.size() <= 50
         && request.resource.data.city is string && request.resource.data.city.size() >= 2 && request.resource.data.city.size() <= 80
         && request.resource.data.country is string && request.resource.data.country.size() >= 2 && request.resource.data.country.size() <= 80
         && request.resource.data.bio is string && request.resource.data.bio.size() >= 30 && request.resource.data.bio.size() <= 500
         && request.resource.data.interests is list && request.resource.data.interests.size() <= 12
         && request.resource.data.languages is list && request.resource.data.languages.size() <= 8
+        && request.resource.data.friendshipGoal in ['close','casual','activities']
+        && request.resource.data.connectionMode in ['online','offline','both']
+        && request.resource.data.contactFrequency in ['daily','fewWeekly','weekly','flexible']
+        && request.resource.data.socialFormat in ['one','small','both']
+        && request.resource.data.communicationStyle in ['text','voice','calls','mixed']
+        && request.resource.data.socialEnergy in ['calm','balanced','lively']
+        && request.resource.data.spontaneousInvites in ['yes','no','sometimes']
+        && request.resource.data.conversationDepth in ['deep','light','both']
+        && request.resource.data.newCityRole in ['newcomer','localHelper','either']
+        && request.resource.data.timeZone is string && request.resource.data.timeZone.size() <= 80
+        && request.resource.data.intercultural is bool
         && request.resource.data.active is bool && request.resource.data.adultConfirmed == true;
+    }
+    function validAgreement(data) {
+      return data is map
+        && data.keys().hasOnly(['frequency','meeting','format','closeness','voice','spontaneous','updatedAt'])
+        && data.frequency in ['daily','fewWeekly','weekly','flexible']
+        && data.meeting in ['yes','maybe','onlineOnly']
+        && data.format in ['text','voice','calls','mixed']
+        && data.closeness in ['close','casual','open']
+        && data.voice in ['yes','no']
+        && data.spontaneous in ['yes','no','sometimes'];
     }
     function connection(id) { return get(/databases/$(database)/documents/connections/$(id)).data; }
     function notBlocked(data) {
@@ -37,15 +58,21 @@ service cloud.firestore {
         && request.resource.data.recipientId in request.resource.data.participants
         && (id == request.auth.uid + '_' + request.resource.data.recipientId || id == request.resource.data.recipientId + '_' + request.auth.uid)
         && request.resource.data.status == 'pending';
-      allow update: if signedIn() && request.auth.uid == resource.data.recipientId
+      allow update: if (signedIn() && request.auth.uid == resource.data.recipientId
         && resource.data.status == 'pending' && request.resource.data.status in ['accepted','declined']
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt']))
+        || (participant(resource.data) && resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['agreements','updatedAt'])
+        && validAgreement(request.resource.data.agreements[request.auth.uid])
+        && (!(resource.data.agreements is map) || request.resource.data.agreements.diff(resource.data.agreements).affectedKeys().hasOnly([request.auth.uid])));
       allow delete: if participant(resource.data);
     }
     match /connections/{connectionId}/messages/{messageId} {
       allow read: if participant(connection(connectionId));
       allow create: if participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
         && notBlocked(connection(connectionId))
+        && connection(connectionId).agreements is map
+        && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
         && request.resource.data.keys().hasOnly(['senderId','text','createdAt'])
         && request.resource.data.senderId == request.auth.uid
         && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 2000;
