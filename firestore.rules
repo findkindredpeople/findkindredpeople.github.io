@@ -53,6 +53,18 @@ service cloud.firestore {
         && data.steps[2] is bool && data.steps[3] is bool
         && (data.continueFriendship == null || data.continueFriendship is bool);
     }
+    function validMeetingPlan(data) {
+      return data is map
+        && data.keys().hasOnly(['mode','activity','when','publicPlace','statusBy'])
+        && data.mode in ['online','offline']
+        && data.activity is string && data.activity.size() >= 1 && data.activity.size() <= 200
+        && data.when is string && data.when.size() >= 10 && data.when.size() <= 50
+        && data.publicPlace is string && data.publicPlace.size() <= 160
+        && (data.mode == 'online' || data.publicPlace.size() >= 2)
+        && data.statusBy is map
+        && data.statusBy.keys().hasOnly([request.auth.uid])
+        && data.statusBy[request.auth.uid] == 'accepted';
+    }
     function connection(id) { return get(/databases/$(database)/documents/connections/$(id)).data; }
     function notBlocked(data) {
       return !exists(/databases/$(database)/documents/blocks/$(data.participants[0] + '_' + data.participants[1]))
@@ -94,16 +106,26 @@ service cloud.firestore {
         && notBlocked(connection(connectionId))
         && connection(connectionId).agreements is map
         && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
-        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','createdAt'])
+        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','plan','createdAt'])
         && request.resource.data.senderId == request.auth.uid
         && request.resource.data.get('text', '') is string
-        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '')
+        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '' && request.resource.data.get('plan', null) == null)
           || (request.resource.data.get('text', '') == ''
             && request.resource.data.get('audioData', '') is string && request.resource.data.get('audioData', '').size() >= 1 && request.resource.data.get('audioData', '').size() <= 180000
             && request.resource.data.get('audioData', '').matches('data:audio/(webm|mp4|ogg).*;base64,.*')
             && request.resource.data.get('audioType', '') is string && request.resource.data.get('audioType', '').matches('audio/(webm|mp4|ogg).*')
-            && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20));
-      allow update, delete: if false;
+            && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20
+            && request.resource.data.get('plan', null) == null)
+          || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
+            && validMeetingPlan(request.resource.data.plan)));
+      allow update: if participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
+        && resource.data.plan is map && request.auth.uid != resource.data.senderId
+        && !(request.auth.uid in resource.data.plan.statusBy)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plan'])
+        && request.resource.data.plan.diff(resource.data.plan).affectedKeys().hasOnly(['statusBy'])
+        && request.resource.data.plan.statusBy.diff(resource.data.plan.statusBy).affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.plan.statusBy[request.auth.uid] in ['accepted','declined'];
+      allow delete: if false;
     }
     match /blocks/{id} {
       allow read: if signedIn() && (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
