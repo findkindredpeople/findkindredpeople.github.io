@@ -36,6 +36,14 @@ service cloud.firestore {
         && data.voice in ['yes','no']
         && data.spontaneous in ['yes','no','sometimes'];
     }
+    function validJourney(data) {
+      return data is map
+        && data.keys().hasOnly(['steps','continueFriendship','updatedAt'])
+        && data.steps is list && data.steps.size() == 4
+        && data.steps[0] is bool && data.steps[1] is bool
+        && data.steps[2] is bool && data.steps[3] is bool
+        && (data.continueFriendship == null || data.continueFriendship is bool);
+    }
     function connection(id) { return get(/databases/$(database)/documents/connections/$(id)).data; }
     function notBlocked(data) {
       return !exists(/databases/$(database)/documents/blocks/$(data.participants[0] + '_' + data.participants[1]))
@@ -64,7 +72,11 @@ service cloud.firestore {
         || (participant(resource.data) && resource.data.status == 'accepted'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['agreements','updatedAt'])
         && validAgreement(request.resource.data.agreements[request.auth.uid])
-        && request.resource.data.agreements.diff(resource.data.get('agreements', {})).affectedKeys().hasOnly([request.auth.uid]));
+        && request.resource.data.agreements.diff(resource.data.get('agreements', {})).affectedKeys().hasOnly([request.auth.uid]))
+        || (participant(resource.data) && resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['journeys','updatedAt'])
+        && validJourney(request.resource.data.journeys[request.auth.uid])
+        && request.resource.data.journeys.diff(resource.data.get('journeys', {})).affectedKeys().hasOnly([request.auth.uid]));
       allow delete: if participant(resource.data);
     }
     match /connections/{connectionId}/messages/{messageId} {
