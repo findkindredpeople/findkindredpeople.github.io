@@ -6,7 +6,7 @@ service cloud.firestore {
     function moderator() { return signedIn() && exists(/databases/$(database)/documents/moderators/$(request.auth.uid)); }
     function participant(data) { return signedIn() && request.auth.uid in data.participants; }
     function validProfile() {
-      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','friendshipGoal','connectionMode','contactFrequency','socialFormat','communicationStyle','socialEnergy','spontaneousInvites','conversationDepth','newCityRole','timeZone','intercultural','photoURL','active','adultConfirmed','updatedAt'])
+      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','friendshipGoal','connectionMode','contactFrequency','socialFormat','communicationStyle','socialEnergy','spontaneousInvites','conversationDepth','newCityRole','timeZone','intercultural','namePronunciation','preferredContactTime','comfortableTopics','culturalContext','photoURL','active','adultConfirmed','updatedAt'])
         && request.resource.data.displayName is string && request.resource.data.displayName.size() >= 2 && request.resource.data.displayName.size() <= 50
         && request.resource.data.city is string && request.resource.data.city.size() >= 2 && request.resource.data.city.size() <= 80
         && request.resource.data.country is string && request.resource.data.country.size() >= 2 && request.resource.data.country.size() <= 80
@@ -24,6 +24,10 @@ service cloud.firestore {
         && request.resource.data.newCityRole in ['newcomer','localHelper','either']
         && request.resource.data.timeZone is string && request.resource.data.timeZone.size() <= 80
         && request.resource.data.intercultural is bool
+        && request.resource.data.get('namePronunciation', '') is string && request.resource.data.get('namePronunciation', '').size() <= 100
+        && request.resource.data.get('preferredContactTime', 'flexible') in ['morning','afternoon','evening','flexible']
+        && request.resource.data.get('comfortableTopics', []) is list && request.resource.data.get('comfortableTopics', []).size() <= 10
+        && request.resource.data.get('culturalContext', '') is string && request.resource.data.get('culturalContext', '').size() <= 300
         && request.resource.data.active is bool && request.resource.data.adultConfirmed == true;
     }
     function validAgreement(data) {
