@@ -32,13 +32,15 @@ service cloud.firestore {
     }
     function validAgreement(data) {
       return data is map
-        && data.keys().hasOnly(['frequency','meeting','format','closeness','voice','spontaneous','updatedAt'])
+        && data.keys().hasOnly(['frequency','meeting','format','closeness','voice','spontaneous','boundaries','updatedAt'])
         && data.frequency in ['daily','fewWeekly','weekly','flexible']
         && data.meeting in ['yes','maybe','onlineOnly']
         && data.format in ['text','voice','calls','mixed']
         && data.closeness in ['close','casual','open']
         && data.voice in ['yes','no']
-        && data.spontaneous in ['yes','no','sometimes'];
+        && data.spontaneous in ['yes','no','sometimes']
+        && data.get('boundaries', '') is string
+        && data.get('boundaries', '').size() <= 300;
     }
     function validJourney(data) {
       return data is map
