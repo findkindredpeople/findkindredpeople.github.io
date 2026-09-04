@@ -1,0 +1,12 @@
+.trust-signals{display:flex;gap:7px;flex-wrap:wrap;margin:11px 0}
+.trust-title{width:100%;margin:0 0 2px;color:#675f54;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.trust-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #9dbca9;border-radius:999px;background:#eff9f3;color:#205f41;font-size:11px;font-weight:800}
+.trust-badge.is-pending{border-color:#d9d0c0;background:#f4efe5;color:#675f54}
+.trust-signals.compact .trust-title{display:none}
+.trust-signals.compact{margin:8px 0 12px}
+.own-trust-signals{margin:0 0 20px;padding:16px 18px;border:1px solid #85b69d;border-radius:14px;background:#eff9f3}
+.own-trust-signals h2{margin:0 0 4px!important;font:italic 24px Georgia,serif!important}
+.own-trust-signals>p{margin:0;color:#496657;font-size:13px}
+.own-trust-badges .trust-title{display:none}
+.profile-preview-trust{margin:16px 0}
+@media(max-width:520px){.trust-badge{font-size:10px}.own-trust-signals{padding:14px}}

@@ -1,5 +1,5 @@
-const CACHE="kindred-community-v25";
-const SHELL=["/app.html","/app.css","/onboarding.css","/kindred-app.js","/firebase-app.js","/manifest.webmanifest","/kindred-icon.svg"];
+const CACHE="kindred-community-v26";
+const SHELL=["/app.html","/app.css","/onboarding.css","/trust.css","/kindred-app.js","/firebase-app.js","/manifest.webmanifest","/kindred-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener("fetch",event=>{

@@ -15,7 +15,8 @@
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="app.css?v=20260904-43">
   <link rel="stylesheet" href="onboarding.css?v=20260904-1">
-  <script type="module" src="kindred-app.js?v=20260904-56"></script>
+  <link rel="stylesheet" href="trust.css?v=20260904-1">
+  <script type="module" src="kindred-app.js?v=20260904-57"></script>
 </head>
 <body>
   <header class="topbar">
@@ -101,6 +102,7 @@
 
         <section class="view" data-panel="profile" hidden>
           <span class="eyebrow" data-i18n="yourProfileUpper">YOUR PROFILE</span><h1 data-i18n="profileTitle">Help the right people recognize you</h1>
+          <section id="ownTrustSignals" class="own-trust-signals" aria-live="polite"></section>
           <section id="passportProgress" class="passport-progress" aria-live="polite"><div class="passport-progress-head"><div><span id="passportProgressEyebrow">FRIENDSHIP PASSPORT</span><h2 id="passportProgressTitle">Complete your Passport</h2></div><strong id="passportProgressPercent">0%</strong></div><div class="passport-progress-track" aria-hidden="true"><span id="passportProgressBar"></span></div><p id="passportProgressStatus"></p><ul id="passportProgressMissing"></ul><p id="passportProgressImpact" class="passport-progress-impact"></p></section>
           <form id="profileForm" class="profile-form card">
             <div class="profile-photo-field">
