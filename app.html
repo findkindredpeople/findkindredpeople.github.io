@@ -13,8 +13,8 @@
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="app.css?v=20260903-39">
-  <script type="module" src="kindred-app.js?v=20260903-52"></script>
+  <link rel="stylesheet" href="app.css?v=20260903-40">
+  <script type="module" src="kindred-app.js?v=20260903-53"></script>
 </head>
 <body>
   <header class="topbar">
@@ -34,7 +34,7 @@
       <button class="nav-item active" data-view="discover" data-i18n="discover">Discover</button>
       <button class="nav-item" data-view="favorites"><span id="favoritesNavLabel">Favorites</span> <span id="favoritesCount"></span></button>
       <button class="nav-item" data-view="connections"><span data-i18n="connections">Connections</span> <span id="requestCount"></span></button>
-      <button class="nav-item" data-view="messages"><span data-i18n="messages">Messages</span> <span id="unreadMessageCount" class="notification-badge" hidden></span></button>
+      <button class="nav-item" data-view="messages"><span data-i18n="conversations">Conversations</span> <span id="unreadMessageCount" class="notification-badge" hidden></span></button>
       <button class="nav-item" data-view="growing" id="growingNavLabel">Growing Friendships</button>
       <button class="nav-item" data-view="profile" data-i18n="myProfile">My profile</button>
       <a class="nav-item" href="safety.html" data-i18n="safetyGuide">Safety guide</a>
@@ -112,6 +112,8 @@
       </div>
     </div>
   </main>
+
+  <button id="quickConversations" class="quick-conversations" type="button" hidden aria-label="Conversations"><span class="quick-conversations-icon" aria-hidden="true">💬</span><span class="quick-conversations-label" data-i18n="conversations">Conversations</span><span id="quickConversationCount" class="notification-badge" hidden></span></button>
 
   <dialog id="profileDialog" class="profile-dialog"><div id="profileDialogContent"></div><form method="dialog" class="dialog-actions"><button id="closeProfileDialog" class="secondary">Close</button></form></dialog>
   <dialog id="reportDialog"><form id="reportForm" method="dialog"><h2 data-i18n="reportBlock">Report or block</h2><p id="reportTarget"></p><label><span data-i18n="reason">Reason</span><select id="reportReason" required><option value="" data-i18n="chooseReason">Choose a reason</option><option value="Harassment or hate" data-i18n="reasonHarassment">Harassment or hate</option><option value="Privacy or impersonation" data-i18n="reasonPrivacy">Privacy or impersonation</option><option value="Spam or fraud" data-i18n="reasonSpam">Spam or fraud</option><option value="Unsafe behaviour" data-i18n="reasonUnsafe">Unsafe behaviour</option><option value="Other" data-i18n="other">Other</option></select></label><label><span data-i18n="details">Details</span><textarea id="reportDetails" minlength="20" maxlength="1000" required></textarea></label><label class="check"><input id="alsoBlock" type="checkbox" checked> <span data-i18n="alsoBlock">Also block this person</span></label><div class="dialog-actions"><button value="cancel" data-i18n="cancel">Cancel</button><button id="submitReport" class="button" value="default" data-i18n="submitPrivately">Submit privately</button></div></form></dialog>
