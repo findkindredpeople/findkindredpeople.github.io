@@ -1,0 +1,26 @@
+.onboarding{position:relative;z-index:8;display:grid;place-items:center;min-height:calc(100vh - 110px);padding:28px 16px}
+.onboarding[hidden]{display:none}
+.onboarding-card{width:min(760px,100%);padding:clamp(22px,5vw,48px);border:1px solid var(--ink);border-radius:22px;background:var(--card);box-shadow:8px 8px 0 var(--ink)}
+.onboarding-brand{margin-bottom:18px;font:italic 23px Georgia,serif}
+.onboarding-progress{height:9px;border-radius:999px;background:#ddd7cb;overflow:hidden}
+.onboarding-progress span{display:block;width:20%;height:100%;border-radius:inherit;background:var(--blue);transition:width .25s ease}
+.onboarding-step{margin:12px 0 20px;color:#675f54;font-size:12px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.onboarding-card h1{margin:0;font:italic clamp(32px,6vw,54px)/1.05 Georgia,serif}
+.onboarding-subtitle{max-width:620px;margin:13px 0 26px;color:#675f54;font-size:17px;line-height:1.5}
+.onboarding-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.onboarding-grid label{display:grid;gap:7px;font-weight:800}
+.onboarding-grid input,.onboarding-grid select{width:100%;min-height:49px}
+.onboarding-final label:first-child,.onboarding-final .check{grid-column:1/-1}
+.onboarding-final .check{display:flex;align-items:center}
+.onboarding-final .check input{width:auto;min-height:0}
+.onboarding-error{min-height:20px;margin:14px 0 0;color:#a12727;font-weight:800}
+.onboarding-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+.onboarding-result{text-align:center;padding:18px 0}
+.onboarding-result>span{font-size:66px}
+.onboarding-result>p{margin:10px auto;max-width:540px;color:#675f54}
+.onboarding-result h1{margin:8px 0 18px}
+.onboarding-active .sidebar,.onboarding-active #quickConversations,.onboarding-active #notificationBell,.onboarding-active #enableBrowserNotifications,.onboarding-active #testNotificationSound,.onboarding-active #installKindred{display:none!important}
+.onboarding-active .shell{display:block}
+.onboarding-active .workspace{max-width:1000px;margin:auto}
+.onboarding-active #signedIn>.view{display:none!important}
+@media(max-width:600px){.onboarding{padding:16px 10px;min-height:auto}.onboarding-card{padding:22px 17px;border-radius:16px;box-shadow:5px 5px 0 var(--ink)}.onboarding-grid{grid-template-columns:1fr}.onboarding-card h1{font-size:34px}.onboarding-actions{position:sticky;bottom:0;padding-top:12px;background:linear-gradient(transparent,var(--card) 24%)}.onboarding-actions .button{flex:1}}
