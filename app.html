@@ -13,8 +13,9 @@
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="app.css?v=20260904-41">
-  <script type="module" src="kindred-app.js?v=20260904-54"></script>
+  <link rel="stylesheet" href="app.css?v=20260904-42">
+  <link rel="stylesheet" href="onboarding.css?v=20260904-1">
+  <script type="module" src="kindred-app.js?v=20260904-55"></script>
 </head>
 <body>
   <header class="topbar">
@@ -52,6 +53,16 @@
       </section>
 
       <div id="signedIn" hidden>
+        <section id="onboarding" class="onboarding" hidden aria-live="polite">
+          <div class="onboarding-card">
+            <div class="onboarding-brand">Kindred ✦</div>
+            <div class="onboarding-progress"><span id="onboardingProgressBar"></span></div>
+            <p id="onboardingStep" class="onboarding-step"></p>
+            <div id="onboardingContent"></div>
+            <p id="onboardingError" class="onboarding-error" role="alert"></p>
+            <div id="onboardingActions" class="onboarding-actions"></div>
+          </div>
+        </section>
         <section class="view" data-panel="discover">
           <div class="section-head"><div><span class="eyebrow" data-i18n="discoverUpper">DISCOVER</span><h1 data-i18n="discoverTitle">People near your rhythm</h1></div><button id="refreshProfiles" class="secondary" data-i18n="refresh">Refresh</button></div>
           <section class="invite-card"><div><strong id="inviteTitle">Invite people to Kindred</strong><p id="inviteIntro">Help your city or interest community grow by sharing a private invitation.</p></div><div class="invite-actions"><button id="copyInvite" class="secondary" type="button">Copy invitation</button><button id="shareInvite" class="button" type="button">Share</button></div></section>
