@@ -1,0 +1,13 @@
+.friendship-type-card{position:relative;margin:0 0 22px;padding:22px;border:1px solid #3156d8;border-radius:18px;background:linear-gradient(135deg,#eef2ff 0%,#fffdf7 62%,#fff3c8 100%);box-shadow:5px 5px 0 var(--ink);overflow:hidden}
+.friendship-type-card::after{content:"✦";position:absolute;right:20px;top:10px;color:#f0bb24;font-size:42px;line-height:1}
+.friendship-type-label{margin:0;color:#3156d8;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.friendship-type-head{display:flex;gap:13px;align-items:center;margin:7px 45px 10px 0}
+.friendship-type-icon{display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;border:1px solid var(--ink);border-radius:50%;background:#fff;font-size:28px}
+.friendship-type-card h2{margin:0!important;font:italic clamp(25px,4vw,34px) Georgia,serif!important}
+.friendship-type-description{max-width:690px;margin:8px 0 14px;color:#554d43}
+.friendship-type-traits{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 17px;padding:0;list-style:none}
+.friendship-type-traits li{padding:6px 10px;border:1px solid #b8c5f5;border-radius:999px;background:#fff;color:#263f99;font-size:12px;font-weight:800}
+.friendship-type-card .button{display:inline-block;text-decoration:none}
+.friendship-type-card.is-incomplete{border-color:#d9d0c0;background:#f4efe5;box-shadow:none}
+.friendship-type-card.is-incomplete::after{display:none}
+@media(max-width:520px){.friendship-type-card{padding:17px}.friendship-type-card::after{right:13px}.friendship-type-head{margin-right:32px}.friendship-type-icon{flex-basis:44px;width:44px;height:44px;font-size:23px}.friendship-type-card .button{width:100%;text-align:center}}
