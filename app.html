@@ -13,8 +13,8 @@
   <link rel="canonical" href="https://findkindredpeople.com/app.html">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="kindred-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="app.css?v=20260903-40">
-  <script type="module" src="kindred-app.js?v=20260903-53"></script>
+  <link rel="stylesheet" href="app.css?v=20260904-41">
+  <script type="module" src="kindred-app.js?v=20260904-54"></script>
 </head>
 <body>
   <header class="topbar">
@@ -90,6 +90,7 @@
 
         <section class="view" data-panel="profile" hidden>
           <span class="eyebrow" data-i18n="yourProfileUpper">YOUR PROFILE</span><h1 data-i18n="profileTitle">Help the right people recognize you</h1>
+          <section id="passportProgress" class="passport-progress" aria-live="polite"><div class="passport-progress-head"><div><span id="passportProgressEyebrow">FRIENDSHIP PASSPORT</span><h2 id="passportProgressTitle">Complete your Passport</h2></div><strong id="passportProgressPercent">0%</strong></div><div class="passport-progress-track" aria-hidden="true"><span id="passportProgressBar"></span></div><p id="passportProgressStatus"></p><ul id="passportProgressMissing"></ul><p id="passportProgressImpact" class="passport-progress-impact"></p></section>
           <form id="profileForm" class="profile-form card">
             <div class="profile-photo-field">
               <div class="profile-photo-preview" aria-hidden="true"><img id="profilePhotoPreview" alt="" hidden><span id="profilePhotoFallback">+</span></div>
