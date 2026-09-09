@@ -10,8 +10,8 @@
   "theme_color": "#f6f1ff",
   "icons": [
     {
-      "src": "/kindred-logo.png",
-      "sizes": "853x696",
+      "src": "/favicon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
