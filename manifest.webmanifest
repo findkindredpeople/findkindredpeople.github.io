@@ -6,14 +6,14 @@
   "start_url": "/app.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8f3e8",
-  "theme_color": "#f8f3e8",
+  "background_color": "#f6f1ff",
+  "theme_color": "#f6f1ff",
   "icons": [
     {
-      "src": "/kindred-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/kindred-logo.png",
+      "sizes": "853x696",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

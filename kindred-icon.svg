@@ -1,7 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#f8f3e8"/>
-  <circle cx="178" cy="214" r="78" fill="#3156d8"/>
-  <circle cx="334" cy="214" r="78" fill="#ff6b55"/>
-  <path d="M105 405c9-83 59-126 151-126s142 43 151 126" fill="#f4c84b" stroke="#211f1a" stroke-width="24" stroke-linecap="round"/>
-  <path d="M256 72l12 29 31 3-24 20 7 31-26-16-26 16 7-31-24-20 31-3z" fill="#f4c84b" stroke="#211f1a" stroke-width="8" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="left" x1="98" y1="130" x2="279" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="#00b9f2"/><stop offset=".55" stop-color="#5148f7"/><stop offset="1" stop-color="#8d25dd"/></linearGradient>
+    <linearGradient id="right" x1="414" y1="135" x2="245" y2="410" gradientUnits="userSpaceOnUse"><stop stop-color="#ff4b91"/><stop offset=".52" stop-color="#ed299f"/><stop offset="1" stop-color="#8b2ee7"/></linearGradient>
+    <linearGradient id="heart" x1="189" y1="280" x2="325" y2="395" gradientUnits="userSpaceOnUse"><stop stop-color="#ae31ef"/><stop offset=".55" stop-color="#f125b2"/><stop offset="1" stop-color="#ff5a8b"/></linearGradient>
+    <linearGradient id="spark" x1="230" y1="75" x2="285" y2="175" gradientUnits="userSpaceOnUse"><stop stop-color="#ffd34d"/><stop offset="1" stop-color="#ff9f2f"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="#fff"/>
+  <circle cx="164" cy="191" r="60" fill="url(#left)"/>
+  <circle cx="348" cy="191" r="60" fill="url(#right)"/>
+  <path d="M248 414c-89-9-145-55-154-134-5-47 15-83 54-91 30-6 60 7 80 35-55 8-86 39-88 82-2 42 35 78 108 108z" fill="url(#left)"/>
+  <path d="M264 414c89-9 145-55 154-134 5-47-15-83-54-91-30-6-60 7-80 35 55 8 86 39 88 82 2 42-35 78-108 108z" fill="url(#right)"/>
+  <path d="M256 394c-10-10-72-57-72-104 0-31 22-54 52-54 19 0 34 9 44 24 10-15 25-24 44-24 30 0 52 23 52 54 0 47-62 94-120 139-58-45-120-92-120-139 0-31 22-54 52-54 19 0 34 9 44 24" fill="url(#heart)" transform="translate(0 -4) scale(.91) translate(25 26)"/>
+  <path d="M256 73c9 37 24 52 61 61-37 9-52 24-61 61-9-37-24-52-61-61 37-9 52-24 61-61z" fill="url(#spark)"/>
+  <circle cx="189" cy="112" r="9" fill="#ffad35"/><circle cx="326" cy="116" r="8" fill="#ffbf3f"/>
 </svg>
