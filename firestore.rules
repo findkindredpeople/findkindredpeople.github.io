@@ -81,6 +81,13 @@ service cloud.firestore {
     }
 
     match /users/{uid} { allow read, create, update, delete: if owner(uid); }
+    match /presence/{uid} {
+      allow read: if signedIn();
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly(['online','lastSeen'])
+        && request.resource.data.online is bool;
+      allow delete: if owner(uid);
+    }
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if owner(uid) && validProfile();
@@ -113,22 +120,32 @@ service cloud.firestore {
       allow read: if participant(connection(connectionId));
       allow create: if participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
         && notBlocked(connection(connectionId))
-        && connection(connectionId).agreements is map
-        && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
-        && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','plan','call','createdAt'])
         && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.get('text', '') is string
-        && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '' && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
-          || (request.resource.data.get('text', '') == ''
-            && request.resource.data.get('audioData', '') is string && request.resource.data.get('audioData', '').size() >= 1 && request.resource.data.get('audioData', '').size() <= 180000
-            && request.resource.data.get('audioData', '').matches('data:audio/(webm|mp4|ogg).*;base64,.*')
-            && request.resource.data.get('audioType', '') is string && request.resource.data.get('audioType', '').matches('audio/(webm|mp4|ogg).*')
-            && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20
-            && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
-          || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
-            && validMeetingPlan(request.resource.data.plan) && request.resource.data.get('call', null) == null)
-          || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
-            && request.resource.data.get('plan', null) == null && validVideoCall(request.resource.data.call)));
+        && (
+          (request.resource.data.keys().hasOnly(['senderId','text','type','audioUrl','durationMillis','createdAt'])
+            && request.resource.data.text is string
+            && request.resource.data.text.size() >= 1
+            && request.resource.data.text.size() <= 2000
+            && request.resource.data.type == 'text'
+            && request.resource.data.audioUrl == ''
+            && request.resource.data.durationMillis == 0)
+          ||
+          (connection(connectionId).agreements is map
+            && connection(connectionId).agreements.keys().hasAll(connection(connectionId).participants)
+            && request.resource.data.keys().hasOnly(['senderId','text','audioData','audioType','duration','plan','call','createdAt'])
+            && request.resource.data.get('text', '') is string
+            && ((request.resource.data.get('text', '').size() >= 1 && request.resource.data.get('text', '').size() <= 2000 && request.resource.data.get('audioData', '') == '' && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
+              || (request.resource.data.get('text', '') == ''
+                && request.resource.data.get('audioData', '') is string && request.resource.data.get('audioData', '').size() >= 1 && request.resource.data.get('audioData', '').size() <= 180000
+                && request.resource.data.get('audioData', '').matches('data:audio/(webm|mp4|ogg).*;base64,.*')
+                && request.resource.data.get('audioType', '') is string && request.resource.data.get('audioType', '').matches('audio/(webm|mp4|ogg).*')
+                && request.resource.data.get('duration', 0) is number && request.resource.data.get('duration', 0) > 0 && request.resource.data.get('duration', 0) <= 20
+                && request.resource.data.get('plan', null) == null && request.resource.data.get('call', null) == null)
+              || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
+                && validMeetingPlan(request.resource.data.plan) && request.resource.data.get('call', null) == null)
+              || (request.resource.data.get('text', '') == '' && request.resource.data.get('audioData', '') == ''
+                && request.resource.data.get('plan', null) == null && validVideoCall(request.resource.data.call))))
+        );
       allow update: if (participant(connection(connectionId)) && connection(connectionId).status == 'accepted'
         && resource.data.plan is map && request.auth.uid != resource.data.senderId
         && !(request.auth.uid in resource.data.plan.statusBy)
