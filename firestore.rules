@@ -184,6 +184,44 @@ service cloud.firestore {
       allow update: if moderator();
       allow delete: if false;
     }
+
+    match /forumPosts/{postId} {
+      allow read: if resource.data.status == 'visible' || moderator();
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.adultConfirmed == true
+        && request.resource.data.keys().hasOnly(['authorId','authorName','category','text','status','createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() >= 1
+        && request.resource.data.authorName.size() <= 50
+        && request.resource.data.category in ['New in Town','Friendship & Connection','Activities','Languages & Culture','Ask the Community']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 10
+        && request.resource.data.text.size() <= 1200
+        && request.resource.data.status == 'visible';
+      allow update: if moderator()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['visible','hidden','removed'];
+      allow delete: if moderator();
+    }
+    match /forumReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['reporterId','postId','reason','status','createdAt'])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.postId is string
+        && request.resource.data.postId.size() >= 1
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 5
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.status == 'open';
+      allow read: if moderator() || (signedIn() && resource.data.reporterId == request.auth.uid);
+      allow update: if moderator()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['open','reviewed','resolved','dismissed'];
+      allow delete: if false;
+    }
+
     match /moderators/{uid} { allow read: if owner(uid); allow write: if false; }
   }
 }
