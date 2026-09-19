@@ -34,7 +34,7 @@
     box.className="kindred-consent";
     box.setAttribute("role","dialog");
     box.setAttribute("aria-label","Privacy choices");
-    box.innerHTML='<strong>Your privacy choices</strong><p>Kindred uses essential browser storage to remember your privacy choice. Advertising and optional analytics are currently disabled.</p><div class="kindred-consent-actions"><button class="primary" type="button" data-choice="essential">Confirm essential only</button><a href="privacy.html">Privacy details</a></div>';
+    box.innerHTML='<strong>Your privacy choices</strong><p>Kindred uses essential browser storage to remember this site notice. Advertising choices, where required, are handled separately through Google's consent controls. See the Privacy Policy for details.</p><div class="kindred-consent-actions"><button class="primary" type="button" data-choice="essential">Confirm essential only</button><a href="privacy.html">Privacy details</a></div>';
     box.addEventListener("click",event=>{
       const choiceButton=event.target.closest&&event.target.closest("[data-choice]");
       if(!choiceButton||!box.contains(choiceButton))return;
