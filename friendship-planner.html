@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free Friendship Planner: Your Next 7 Days | Kindred</title>
+<meta name="description" content="Make a realistic seven-day friendship plan for your time and energy. Get small actions, an invitation template and a printable checklist. No account needed.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://findkindredpeople.com/friendship-planner.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Your next 7 days of connection | Kindred">
+<meta property="og:description" content="A free planner with realistic actions, editable invitation templates and a printable checklist. No sign-in.">
+<meta property="og:url" content="https://findkindredpeople.com/friendship-planner.html">
+<meta property="og:image" content="https://findkindredpeople.com/community-cafe-kindred.png">
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="content.css">
+<link rel="stylesheet" href="planner.css">
+<script src="friendship-planner.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Free Friendship Planner: Your Next 7 Days","url":"https://findkindredpeople.com/friendship-planner.html","description":"A free seven-day planning worksheet with adaptable actions and invitation templates.","datePublished":"2026-09-19","dateModified":"2026-09-19","isPartOf":{"@type":"WebSite","name":"Kindred","url":"https://findkindredpeople.com/"}}</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to planner</a>
+<header><div class="nav"><a class="brand" href="index.html">Kindred ✦</a><nav aria-label="Main navigation"><a href="guides.html">Guides</a><a href="friendship-planner.html" aria-current="page">Planner</a><a href="safety.html">Safety</a><a href="about.html">About</a><a href="app.html">Community</a></nav></div></header>
+<main id="main" class="wrap planner-wrap">
+<section class="hero planner-hero"><span class="eyebrow">A FREE TOOL · NO SIGN-IN</span><h1>Your next 7 days of connection.</h1><p class="lead">Choose one social goal and the time you actually have. Leave with a small plan, a message you can adapt and room to rest.</p><p class="meta">For adults building friendships. A week of useful steps, with no promise of a friendship deadline.</p></section>
+<div class="planner-layout">
+<section class="card planner-settings" aria-labelledby="settings-heading">
+<h2 id="settings-heading">Make it fit your week</h2>
+<p>These choices stay on this page. The planner does not send them to Kindred or save them after you leave.</p>
+<form id="planner-form" hidden>
+<label for="goal">Where are you starting?</label><select id="goal" name="goal"><option value="start">I need a place to meet people</option><option value="follow">I met someone and want to follow up</option><option value="keep">I want to keep a friendship going</option></select>
+<label for="budget">Time for planning and contact this week</label><select id="budget" name="budget"><option value="30">30 minutes · a small start</option><option value="60" selected>60 minutes · one short activity</option><option value="120">2 hours · more room to connect</option></select>
+<p class="field-note">Travel time is extra. If travel will not fit, choose online or use the week to arrange a later visit.</p>
+<label for="setting">Where would you like to connect?</label><select id="setting" name="setting"><option value="nearby">In person, close to my routine</option><option value="online">Online, without travelling</option></select>
+<label for="style">What feels easier?</label><select id="style" name="style"><option value="quiet">A quiet conversation</option><option value="activity">A shared activity to talk about</option></select>
+<label for="message-language">Invitation language</label><select id="message-language" name="language"><option value="en">English</option><option value="de">Deutsch</option></select>
+<button type="submit" class="button">Build my week</button>
+</form>
+<noscript><p><strong>The sample plan below works without JavaScript.</strong> To adapt it, use the smaller-week suggestions below, or enable JavaScript for the form.</p></noscript>
+</section>
+<section class="card planner-result" aria-labelledby="plan-heading">
+<span class="eyebrow">YOUR WORKING PLAN</span><h2 id="plan-heading" tabindex="-1">Find one place worth returning to</h2>
+<p id="plan-summary">Sample: 60 minutes across the week, in person, with a quiet setting. Add travel time separately.</p>
+<p id="plan-boundary" class="callout">Choose a public place and check the organiser, cost, access and next date before going. You can leave early or change the plan.</p>
+<ol id="plan-steps" class="plan-steps">
+<li><strong>Day 1 · 5 min</strong><p>Choose one interest, one realistic time slot and your travel limit.</p></li>
+<li><strong>Day 2 · 10 min</strong><p>Find two recurring options, such as a library discussion or a neighbourhood group. Check their next dates.</p></li>
+<li><strong>Day 3 · Rest</strong><p>Leave today free. You do not need a new social task every day.</p></li>
+<li><strong>Day 4 · 30 min</strong><p>Try a short, drop-in visit if available. Otherwise ask the organiser about the next session. A longer event can wait for another week.</p></li>
+<li><strong>Day 5 · 5 min</strong><p>Write down what felt welcoming and whether returning would fit your routine.</p></li>
+<li><strong>Day 6 · Rest</strong><p>Keep the day open. An unanswered message does not require another message.</p></li>
+<li><strong>Day 7 · 10 min</strong><p>Choose one next date, or replace an unsuitable option. Measure a useful next step, not the number of new friends.</p></li>
+</ol>
+<div class="template-box"><h3>A message to adapt</h3><p id="message-note">Replace every bracketed detail. Ask about the group before making a journey.</p><blockquote id="invitation">Hi, I’m new to the area and interested in [activity]. Is your next session open to newcomers? Could you confirm the time, cost and whether I need to book?</blockquote></div>
+<div id="plan-actions" class="planner-actions" hidden><button type="button" id="copy-plan" class="button">Copy plan</button><button type="button" id="download-plan" class="secondary-button">Download .txt</button><button type="button" id="print-plan" class="secondary-button">Print plan</button></div>
+<p id="planner-status" role="status" aria-live="polite"></p>
+<div id="copy-fallback" hidden><label for="plan-text">Copy the text below</label><textarea id="plan-text" rows="10" readonly></textarea></div>
+</section>
+</div>
+<section class="article planner-explainer" aria-labelledby="how-heading"><h2 id="how-heading">Use the plan as a decision, not a test</h2>
+<p>The tool combines your starting point, time budget and preferred setting with Kindred’s suggested steps. It does not search live events, find members, diagnose social needs or measure compatibility. Two people with the same choices receive the same starting plan; edit it for your circumstances.</p>
+<h3>What counts as a useful result?</h3><p>If you are new somewhere, a confirmed next session can be enough. If you have met someone, a clear invitation gives them something they can answer. If you already have a friend, agreeing on a manageable rhythm may be more useful than another long conversation about being busy.</p>
+<h3>Make a smaller week work</h3><p>With 30 minutes, choose a brief call, a message or checking one group. Do not try to squeeze a long class into a short slot. For an in-person plan, include the journey, accessibility needs, preparation and recovery in your own calendar. If those costs are too high, shorten the contact or arrange a future date.</p>
+<h3>If the other person is unavailable</h3><p>A draft is an invitation, not an appointment. Only meet or call after both people agree. Accept a decline without trying to persuade them. After silence, one later follow-up can be reasonable; if there is still no reply, leave the next step with them. The <a href="guide-follow-up.html">follow-up guide</a> shows how to respond to different answers.</p>
+<h3>Check a place before you commit</h3><p>Look for the next date, an identifiable organiser, a clear cost, an accessible venue and an explanation of how newcomers join. Do not pay simply because a listing promises instant friendship. Compare options using the <a href="guide-find-recurring-groups.html">recurring-group worksheet</a>.</p>
+<h3>Keep your invitation private</h3><p>Use an agreed contact channel. Avoid adding someone to a group chat without asking, publishing their number or including your exact home address. For first meetings, choose a public place and keep your own way home. For online contact, check the room and recording rules before joining.</p>
+<h3>What happens to my checklist?</h3><p>Ticked steps last only while this page is open. Copy, download or print your plan if you want to keep it. Downloaded text and printed pages include the current plan and invitation; store them somewhere appropriate. The planner has no account requirement and does not automatically send messages or book activities.</p>
+<div class="related"><strong>Help for the next step</strong><p><a href="guide-first-30-days.html">A realistic first month after moving</a><br><a href="guide-build-small-circle.html">Turn a few acquaintances into a small circle</a><br><a href="guide-meet-people-berlin.html">Find a starting point in Berlin</a><br><a href="guide-safe-meetups.html">Plan a safer first meeting</a></p></div>
+<p class="meta">Created for Kindred with AI assistance · 19 September 2026 · <a href="editorial-policy.html">How this content is prepared</a> · <a href="contact.html">Suggest a correction</a></p>
+</section>
+</main>
+<footer><div class="foot"><span>© 2026 Kindred</span><a href="guides.html">Guides</a><a href="about.html">About</a><a href="editorial-policy.html">Editorial policy</a><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a></div></footer>
+</body></html>

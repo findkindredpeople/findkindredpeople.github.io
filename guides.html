@@ -15,17 +15,18 @@
 <meta property="og:url" content="https://findkindredpeople.com/guides.html">
 <meta name="robots" content="index,follow">
 <link rel="stylesheet" href="content.css">
-<script src="cookie-consent.js?v=20260910-2" defer></script>
+<script src="cookie-consent.js?v=20260919-3" defer></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"CollectionPage","name":"Kindred Guides","url":"https://findkindredpeople.com/guides.html","description":"Practical guides for making friends, building belonging and meeting people safely in a new city.","isPartOf":{"@type":"WebSite","name":"Kindred","url":"https://findkindredpeople.com/"},"publisher":{"@type":"Organization","name":"Kindred","url":"https://findkindredpeople.com/","logo":{"@type":"ImageObject","url":"https://findkindredpeople.com/kindred-logo.png"}}}
 </script>
+<script src="guide-search.js" defer></script>
 </head>
 <body>
 <header>
   <div class="nav">
     <a class="brand" href="index.html">Kindred ✦</a>
     <nav>
-      <a href="guides.html">Guides</a>
+      <a href="guides.html">Guides</a><a href="friendship-planner.html">Planner</a>
       <a href="safety.html">Safety</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
@@ -50,8 +51,10 @@
     <a class="guide-path" href="guide-safe-meetups.html"><strong>Meet more safely</strong><span>Public places, boundaries, transport and warning signs.</span></a>
   </nav>
 
+<section class="planner-promo" aria-labelledby="planner-promo-heading"><h2 id="planner-promo-heading">Turn reading into a plan you can use</h2><p>Choose your time, starting point and preferred setting. Get a seven-day checklist and an invitation in English or German, then copy, download or print it.</p><a class="button" href="friendship-planner.html">Open the free friendship planner</a></section>
+  <div class="guide-search" id="guide-search" hidden><label for="guide-query">Find a guide for your situation</label><input type="search" id="guide-query" placeholder="Try: parent, follow-up, Berlin, online…" autocomplete="off" aria-controls="guide-list"><p id="guide-count" role="status" aria-live="polite">30 guides</p></div>
   <article class="article">
-    <div class="grid">
+    <div class="grid" id="guide-list">
       <div class="card">
         <h3>How to Make Friends in a Small Town</h3>
         <p>Use recurring routines, community contribution and patient invitations to find your place in an established local network.</p>
@@ -74,7 +77,7 @@
       </div>
       <div class="card">
         <h3>How to Make Friends in a New City</h3>
-        <p>A practical, low-pressure plan for building real friendships after moving. Includes a four-week rule and realistic timeline.</p>
+        <p>A practical starting plan for finding familiar places, following up and building a routine after moving.</p>
         <a class="button" href="guide-friends-new-city.html">Read guide</a>
       </div>
       <div class="card">
