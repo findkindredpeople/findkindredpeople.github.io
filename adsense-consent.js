@@ -9,31 +9,57 @@
 
   const controls = [...document.querySelectorAll('[data-google-consent-control]')];
   const status = document.querySelector('[data-google-consent-status]');
-  let ready = false;
+  let waitingForMessage = false;
+  let timer;
   const announce = message => {if (status) status.textContent = message;};
   const unavailable = () => {
-    if (!ready) announce('Google’s privacy choices are not available for this visit. Advertising remains paused. You can try reloading this page or contact Kindred.');
+    clearTimeout(timer);
+    waitingForMessage = false;
+    announce('Google’s consent message is not available right now. Advertising remains paused. You can try again later or contact Kindred.');
   };
-  const timer = setTimeout(unavailable, 15000);
+  const startTimer = () => {
+    clearTimeout(timer);
+    timer = setTimeout(unavailable, 15000);
+  };
+  startTimer();
 
   controls.forEach(button => button.addEventListener('click', () => {
+    waitingForMessage = true;
+    announce('Requesting your privacy options from Google. Advertising remains paused.');
+    startTimer();
     window.googlefc.callbackQueue.push({CONSENT_API_READY: () => {
       if (typeof window.googlefc.showRevocationMessage === 'function') {
-        window.googlefc.showRevocationMessage();
-        announce('Google’s consent message is opening so you can review or change your choice. Advertising remains paused.');
-      }
+        try {window.googlefc.showRevocationMessage();} catch {unavailable();}
+      } else unavailable();
     }});
   }));
 
   window.googlefc.callbackQueue.push({CONSENT_API_READY: () => {
     if (typeof window.__tcfapi !== 'function') return;
     window.__tcfapi('addEventListener', 0, (data, success) => {
-      if (!success || !data || typeof data.gdprApplies !== 'boolean') return;
-      ready = true; clearTimeout(timer);
+      if (!success || !data || data.cmpStatus === 'error') {
+        controls.forEach(button => {button.hidden = true;});
+        unavailable();
+        return;
+      }
+      if (typeof data.gdprApplies !== 'boolean') return;
       controls.forEach(button => {button.hidden = !data.gdprApplies;});
-      announce(data.gdprApplies
-        ? 'Use “Privacy and cookie settings” to review or change your Google consent choices. Advertising remains paused.'
-        : 'Google has not requested a European consent message for this visit. Advertising remains paused.');
+      if (!data.gdprApplies) {
+        clearTimeout(timer);
+        waitingForMessage = false;
+        announce('Google has not requested a European consent message for this visit. Advertising remains paused.');
+      } else if (data.eventStatus === 'cmpuishown') {
+        clearTimeout(timer);
+        waitingForMessage = false;
+        announce('You can review your choices in Google’s consent message. Advertising remains paused.');
+      } else if (data.eventStatus === 'useractioncomplete') {
+        clearTimeout(timer);
+        waitingForMessage = false;
+        announce('Google has recorded your choices. You can change them using the button above. Advertising remains paused.');
+      } else if (data.eventStatus === 'tcloaded' && !waitingForMessage) {
+        clearTimeout(timer);
+        announce('Use “Privacy and cookie settings” to review or change your Google consent choices. Advertising remains paused.');
+      }
     });
   }});
 
