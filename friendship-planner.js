@@ -6,9 +6,25 @@
   const budgets = {30: [5, 5, 0, 15, 0, 0, 5], 60: [5, 10, 0, 30, 5, 0, 10], 120: [10, 15, 0, 60, 10, 15, 10]};
   const titles = {start: 'Find one place worth returning to', follow: 'Turn one good conversation into a next step', keep: 'Give an existing friendship a realistic rhythm'};
   let current;
-  function makePlan() {
-    const goal = $('goal').value, budget = Number($('budget').value);
-    const online = $('setting').value === 'online', quiet = $('style').value === 'quiet', german = $('message-language').value === 'de';
+  function personalize(invitation) {
+    const values = {
+      '[name]': 'invite-name', '[Name]': 'invite-name',
+      '[activity]': 'invite-activity', '[Aktivität]': 'invite-activity',
+      '[shared online activity]': 'invite-activity', '[shared activity]': 'invite-activity',
+      '[gemeinsame Online-Aktivität]': 'invite-activity', '[gemeinsame Aktivität]': 'invite-activity',
+      '[topic]': 'invite-topic', '[Thema]': 'invite-topic',
+      '[something they mentioned]': 'invite-topic', '[Thema aus unserem letzten Gespräch]': 'invite-topic',
+      '[where we met]': 'invite-met', '[Anlass]': 'invite-met',
+      '[public place]': 'invite-place', '[öffentlicher Ort]': 'invite-place',
+      '[day]': 'invite-day', '[Tag]': 'invite-day',
+      '[time]': 'invite-time', '[time and time zone]': 'invite-time',
+      '[Uhrzeit]': 'invite-time', '[Uhrzeit und Zeitzone]': 'invite-time'
+    };
+    return invitation.replace(/\[[^\]]+\]/g, token => values[token] ? ($(values[token]).value.trim() || token) : token);
+  }
+  function makePlan(options) {
+    options = options || {goal: $('goal').value, budget: Number($('budget').value), online: $('setting').value === 'online', quiet: $('style').value === 'quiet', german: $('message-language').value === 'de'};
+    const {goal, budget, online, quiet, german} = options;
     const minutes = budgets[budget];
     const activity = online ? (quiet ? 'a short voice or text conversation' : 'an online game, reading group or language exchange') : (quiet ? 'a quiet library or neighbourhood group' : 'a walking, craft or other shared-interest group');
     const reserve = budget === 30 ? 'Keep it to 15 minutes. If the activity is longer, use this slot to arrange a future session instead.' : `Allow up to ${minutes[3]} minutes. If the full activity will not fit, ask about a shorter visit or choose a future date.`;
@@ -47,12 +63,14 @@
       : `Hi, I’m interested in [activity]. Is your next ${online ? 'online ' : ''}session open to newcomers? Could you confirm the time, cost and whether I need to book?`;
     else {
       const proposal = online ? (quiet ? 'a short call' : '[shared online activity]') : (quiet ? 'a short catch-up at [public place]' : '[shared activity] at [public place]');
-      const deProposal = online ? (quiet ? 'kurz zu telefonieren' : '[gemeinsame Online-Aktivität] zu machen') : (quiet ? 'uns kurz bei [öffentlicher Ort] zu treffen' : '[gemeinsame Aktivität] bei [öffentlicher Ort] zu machen');
+      const deProposal = online ? (quiet ? 'ein kurzes Telefonat' : '[gemeinsame Online-Aktivität]') : (quiet ? 'ein kurzes Treffen bei [öffentlicher Ort]' : '[gemeinsame Aktivität] bei [öffentlicher Ort]');
       invitation = german
-        ? `${goal === 'follow' ? 'Hallo [Name], unser Gespräch über [Thema] bei [Anlass] hat mir gefallen.' : 'Hallo [Name], wie geht es dir mit [Thema aus unserem letzten Gespräch]?'} Hast du am [Tag] um [Uhrzeit${online ? ' und Zeitzone' : ''}] Lust, ${deProposal}? Ich hätte ungefähr ${minutes[3]} Minuten Zeit. Wenn es nicht passt, ist das auch völlig in Ordnung.`
+        ? `${goal === 'follow' ? 'Hallo [Name], unser Gespräch über [Thema] bei [Anlass] hat mir gefallen.' : 'Hallo [Name], wie geht es dir mit [Thema aus unserem letzten Gespräch]?'} Hast du am [Tag] um [Uhrzeit${online ? ' und Zeitzone' : ''}] Lust auf ${deProposal}? Ich hätte ungefähr ${minutes[3]} Minuten Zeit. Wenn es nicht passt, ist das auch völlig in Ordnung.`
         : `${goal === 'follow' ? 'Hi [name], I enjoyed talking about [topic] at [where we met].' : 'Hi [name], how has [something they mentioned] been going?'} Would you be up for ${proposal} on [day] at [time${online ? ' and time zone' : ''}]? I have about ${minutes[3]} minutes. No problem if it does not fit your week.`;
     }
-    return {title: titles[goal], summary: `${budget} minutes across the week · ${online ? 'Online, without travel' : 'In person; add travel time separately'} · ${quiet ? 'Quiet conversation' : 'Shared activity'}`, boundary: online ? 'Use a moderated or agreed meeting space. Check time zones and recording rules; keep personal details private. A call happens only after both people agree.' : 'Choose a public place and check the organiser, cost, access and next date before going. Keep your own way home. A meeting happens only after both people agree.', tasks, minutes, invitation, note: 'Replace every bracketed detail before sending. This page does not send messages or book activities.'};
+    invitation = personalize(invitation);
+    const note = /\[[^\]]+\]/.test(invitation) ? 'Some bracketed details are still missing. Fill them in below or edit your copied message before sending.' : 'Your details are included. Check the wording, day, time and place before sending.';
+    return {options, title: titles[goal], summary: `${budget} minutes across the week · ${online ? 'Online, without travel' : 'In person; add travel time separately'} · ${quiet ? 'Quiet conversation' : 'Shared activity'}`, boundary: online ? 'Use a moderated or agreed meeting space. Check time zones and recording rules; keep personal details private. A call happens only after both people agree.' : 'Choose a public place and check the organiser, cost, access and next date before going. Keep your own way home. A meeting happens only after both people agree.', tasks, minutes, invitation, note: note + ' This page does not send messages or book activities.'};
   }
   function render(announce) {
     current = makePlan();
@@ -82,6 +100,15 @@
   }
   form.hidden = false;
   $('plan-actions').hidden = false;
+  $('invitation-details').hidden = false;
+  $('invitation-form').addEventListener('submit', event => {
+    event.preventDefault();
+    // Keep the plan and ticks unchanged while personalising its invitation.
+    const next = makePlan(current.options);
+    current.invitation = next.invitation; current.note = next.note;
+    $('invitation').textContent = current.invitation; $('message-note').textContent = current.note;
+    $('planner-status').textContent = 'Invitation updated. Your checklist is unchanged.';
+  });
   form.addEventListener('submit', event => {event.preventDefault(); render(true);});
   form.addEventListener('change', () => {$('planner-status').textContent = 'Choices changed. Select “Build my week” to update the plan.';});
   $('copy-plan').addEventListener('click', async () => {
