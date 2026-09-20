@@ -1,9 +1,11 @@
 import {evaluateActivity} from './activity-fit.mjs';
+import {byId,selectedIds,toComparison} from './berlin-activities-data.mjs';
 
 const $ = id => document.getElementById(id);
 const form = $('comparison-form');
 const keys = ['name', 'url', 'duration', 'travel', 'fee', 'transport', 'newcomers', 'schedule', 'access', 'notes'];
 let exportText = '';
+let imported = false;
 const number = id => $(id).value.trim() === '' ? null : Number($(id).value);
 const money = (value, currency) => `${currency} ${value.toFixed(2)}`;
 const el = (tag, text) => {const node = document.createElement(tag); if (text !== undefined) node.textContent = text; return node;};
@@ -18,10 +20,10 @@ function compare() {
   const heading = el('h2', 'Your practical comparison'); heading.id = 'comparison-heading'; heading.tabIndex = -1; output.append(heading);
   const limitText = `Per visit: up to ${limits.minutes} minutes including return travel and ${money(limits.cost, currency)} including transport.`;
   const sample = !$('example-notice').hidden;
-  output.append(el('p', sample ? 'Fictional example: these are not real listings or verified prices.' : 'Based only on the details you entered. Check them with each organiser.'));
+  output.append(el('p', sample ? 'Fictional example: these are not real listings or verified prices.' : imported ? 'Starts with published Berlin listing details, plus your edits. Source checks are dated; confirm current conditions with each organiser.' : 'Based only on the details you entered. Check them with each organiser.'));
   output.append(el('p', limitText));
   const grid = el('div'); grid.className = 'comparison-cards'; output.append(grid);
-  const parts = ['KINDRED — ACTIVITY COMPARISON', sample ? 'Fictional example, not real listings.' : 'User-entered information; not verified by Kindred.', limitText];
+  const parts = ['KINDRED — ACTIVITY COMPARISON', sample ? 'Fictional example, not real listings.' : imported ? 'Published Berlin listing details plus user edits. See dated source notes and confirm current conditions.' : 'User-entered information; not verified by Kindred.', limitText];
   for (const activity of activities) {
     const result = evaluateActivity(activity, limits);
     const card = el('section'); card.className = 'comparison-result';
@@ -55,6 +57,7 @@ form.addEventListener('input', () => {
   exportText = ''; status('Details changed. Select “Compare activities” to update your results.');
 });
 $('load-example').addEventListener('click', () => {
+  imported = false; $('berlin-import-notice').hidden = true;
   form.reset(); $('time-limit').value = '90'; $('cost-limit').value = '15';
   const example = [
     {name:'Example library discussion',duration:60,travel:20,fee:0,transport:4,newcomers:'yes',schedule:'yes',access:'yes',notes:'Fictional example. Ask whether the next date is confirmed.'},
@@ -65,6 +68,7 @@ $('load-example').addEventListener('click', () => {
   $('example-notice').hidden = false; compare();
 });
 $('clear-comparison').addEventListener('click', () => {
+  imported = false; $('berlin-import-notice').hidden = true;
   form.reset(); $('example-notice').hidden = true; $('comparison-results').hidden = true; $('comparison-actions').hidden = true; $('comparison-copy-fallback').hidden = true; exportText = '';
   status('All activity details cleared. Nothing was saved by this tool.'); $('a1-name').focus();
 });
@@ -77,3 +81,10 @@ $('download-comparison').addEventListener('click', () => {
   const link = el('a'); link.href = url; link.download = 'kindred-activity-comparison.txt'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); status('Your comparison download has started.');
 });
 $('print-comparison').addEventListener('click', () => window.print());
+const berlinIds = selectedIds(new URLSearchParams(location.search).get('berlin'));
+if (berlinIds.length) {
+  imported = true; $('currency').value = 'EUR';
+  berlinIds.map(id => toComparison(byId.get(id))).forEach((activity,i) => keys.forEach(key => {$(`a${i+1}-${key}`).value = activity[key] ?? ''; }));
+  $('berlin-import-notice').hidden = false;
+  status(`${berlinIds.length} Berlin ${berlinIds.length === 1 ? 'activity added' : 'activities added'}. Enter your return travel, transport costs and joining checks, then compare.`);
+}

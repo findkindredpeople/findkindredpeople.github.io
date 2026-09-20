@@ -1,3 +1,6 @@
+import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs';
+import {downloadCalendar} from './calendar.mjs';
+import {storageKey,invitationFields,calendarFields,validSavedPlan} from './planner-storage.mjs';
 (() => {
   'use strict';
   const form = document.getElementById('planner-form');
@@ -5,7 +8,7 @@
   const $ = id => document.getElementById(id);
   const budgets = {30: [5, 5, 0, 15, 0, 0, 5], 60: [5, 10, 0, 30, 5, 0, 10], 120: [10, 15, 0, 60, 10, 15, 10]};
   const titles = {start: 'Find one place worth returning to', follow: 'Turn one good conversation into a next step', keep: 'Give an existing friendship a realistic rhythm'};
-  let current;
+  let current, importedActivity;
   function personalize(invitation) {
     const values = {
       '[name]': 'invite-name', '[Name]': 'invite-name',
@@ -72,8 +75,8 @@
     const note = /\[[^\]]+\]/.test(invitation) ? 'Some bracketed details are still missing. Fill them in below or edit your copied message before sending.' : 'Your details are included. Check the wording, day, time and place before sending.';
     return {options, title: titles[goal], summary: `${budget} minutes across the week · ${online ? 'Online, without travel' : 'In person; add travel time separately'} · ${quiet ? 'Quiet conversation' : 'Shared activity'}`, boundary: online ? 'Use a moderated or agreed meeting space. Check time zones and recording rules; keep personal details private. A call happens only after both people agree.' : 'Choose a public place and check the organiser, cost, access and next date before going. Keep your own way home. A meeting happens only after both people agree.', tasks, minutes, invitation, note: note + ' This page does not send messages or book activities.'};
   }
-  function render(announce) {
-    current = makePlan();
+  function render(announce, options) {
+    current = makePlan(options);
     $('plan-heading').textContent = current.title;
     $('plan-summary').textContent = current.summary;
     $('plan-boundary').textContent = current.boundary;
@@ -122,5 +125,59 @@
     $('planner-status').textContent = 'Your text download has started.';
   });
   $('print-plan').addEventListener('click', () => window.print());
+  const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (deviceZone && !['Europe/Berlin','UTC'].includes(deviceZone)) {
+    const option = document.createElement('option'); option.value = deviceZone; option.textContent = deviceZone + ' · this device'; $('calendar-zone').append(option);
+  }
+  $('calendar-zone').value = deviceZone || 'Europe/Berlin';
+  function showImportedActivity() {
+    const notice = $('planner-import'); notice.replaceChildren(); notice.hidden = !importedActivity;
+    if (!importedActivity) return;
+    const link = document.createElement('a'); link.href = importedActivity.source; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Check the organiser’s details';
+    notice.append(`${importedActivity.title} · full session window ${importedActivity.duration} minutes. This is separate from your weekly planning budget. Confirm the date, cost and booking before going. `,link);
+  }
+  importedActivity = byId.get(selectedIds(new URLSearchParams(location.search).get('berlin'))[0]);
+  if (importedActivity) {
+    const item = importedActivity, date = nextDate(item);
+    $('invite-activity').value = item.title; $('invite-place').value = item.venue; $('invite-time').value = item.start + ' Berlin time';
+    if (date) $('invite-day').value = date;
+    $('calendar-title').value = item.title; $('calendar-place').value = `${item.venue}, ${item.address}`;
+    $('calendar-date').value = date || ''; $('calendar-time').value = item.start; $('calendar-duration').value = item.duration; $('calendar-zone').value = 'Europe/Berlin';
+    showImportedActivity();
+  }
+  $('saved-plan-controls').hidden = false; $('calendar-section').hidden = false;
+  function savedState() {
+    try {
+      const raw = localStorage.getItem(storageKey), saved = validSavedPlan(JSON.parse(raw || 'null'));
+      $('restore-plan').disabled = !saved; $('delete-plan').disabled = !raw;
+      $('saved-plan-info').textContent = saved ? `A plan was saved in this browser on ${new Date(saved.savedAt).toLocaleString()}. It is not loaded automatically.` : raw ? 'The saved plan could not be read. Delete it or replace it with your current plan.' : 'No plan saved in this browser.';
+    } catch {$('restore-plan').disabled = true; $('delete-plan').disabled = false; $('saved-plan-info').textContent = 'Browser storage is unavailable or the saved plan could not be read. You can still download a copy.';}
+  }
+  $('save-plan').addEventListener('click',() => {
+    const snapshot = {version:1,options:current.options,checked:[...$('plan-steps').querySelectorAll('input')].map(input=>input.checked),invitation:current.invitation,note:current.note,savedAt:new Date().toISOString(),fields:Object.fromEntries(invitationFields.map(key=>[key,$('invite-'+key).value])),calendar:Object.fromEntries(calendarFields.map(key=>[key,$('calendar-'+key).value])),activityId:importedActivity?.id || ''};
+    try {localStorage.setItem(storageKey,JSON.stringify(snapshot)); savedState(); $('planner-status').textContent = 'Displayed plan, ticks, invitation drafts and calendar fields saved on this device. Later edits are not saved automatically.';}
+    catch {$('planner-status').textContent = 'The browser could not save this plan. Use Download .txt to keep a copy.';}
+  });
+  $('restore-plan').addEventListener('click',() => {
+    try {
+      const saved = validSavedPlan(JSON.parse(localStorage.getItem(storageKey) || 'null'));
+      if (!saved) throw new Error('No valid saved plan');
+      const o = saved.options; $('goal').value = o.goal; $('budget').value = o.budget; $('setting').value = o.online ? 'online' : 'nearby'; $('style').value = o.quiet ? 'quiet' : 'activity'; $('message-language').value = o.german ? 'de' : 'en';
+      invitationFields.forEach(key => {$('invite-'+key).value = saved.fields[key];});
+      calendarFields.forEach(key => {$('calendar-'+key).value = saved.calendar[key];});
+      if (!$('calendar-zone').value) $('calendar-zone').value = 'Europe/Berlin';
+      render(false,o); current.invitation = saved.invitation; current.note = saved.note; $('invitation').textContent = current.invitation; $('message-note').textContent = current.note;
+      [...$('plan-steps').querySelectorAll('input')].forEach((input,i)=>{input.checked = saved.checked[i];});
+      importedActivity = byId.get(saved.activityId); showImportedActivity();
+      $('planner-status').textContent = 'Saved plan restored. Check saved dates before using them; later edits need Save on this device again.'; $('plan-heading').focus();
+    } catch {$('planner-status').textContent = 'The saved plan could not be restored. You can delete it and save a new one.';}
+  });
+  $('delete-plan').addEventListener('click',() => {try {localStorage.removeItem(storageKey); savedState(); $('planner-status').textContent = 'Saved plan deleted from this browser. The currently displayed plan stays open.';} catch {$('planner-status').textContent = 'Browser storage is unavailable. Clear this site’s data in your browser settings to remove stored plans.';}});
+  $('calendar-form').addEventListener('submit',event => {
+    event.preventDefault();
+    try {downloadCalendar({title:$('calendar-title').value,location:$('calendar-place').value,date:$('calendar-date').value,time:$('calendar-time').value,duration:$('calendar-duration').value,timeZone:$('calendar-zone').value,description:'Your Kindred visit plan. Include travel time separately.',source:importedActivity?.source || ''}); $('calendar-status').textContent = 'Calendar download started. Import the .ics file into your calendar. This does not send an invitation or reserve a place.';}
+    catch (error) {$('calendar-status').textContent = error.message;}
+  });
   render(false);
+  savedState();
 })();
