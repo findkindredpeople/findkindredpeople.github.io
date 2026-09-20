@@ -1,4 +1,4 @@
-import {evaluateActivity} from './activity-fit.mjs';
+import {evaluateActivity} from './activity-fit.mjs?v=20260920-2';
 import {byId,selectedIds,toComparison} from './berlin-activities-data.mjs';
 
 const $ = id => document.getElementById(id);

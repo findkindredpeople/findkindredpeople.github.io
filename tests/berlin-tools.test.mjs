@@ -38,6 +38,15 @@ test('calendar conversion preserves Berlin summer/winter and rejects DST ambigui
   assert.throws(()=>wallTimeToUTC('2026-10-25','02:30','Europe/Berlin'),/occurs twice/);
   assert.throws(()=>wallTimeToUTC('2026-02-31','10:00','Europe/Berlin'),/valid date/);
 });
+test('a known component above the limit blocks the visit even when another cost is unknown',()=>{
+  const partial={duration:180,travel:null,fee:20,transport:null,newcomers:'unknown',schedule:'unknown',access:'unknown'};
+  const result=evaluateActivity(partial,{minutes:90,cost:15});
+  assert.equal(result.status,'Does not fit yet'); assert.equal(result.minutes,null); assert.equal(result.cost,null);
+  assert.ok(result.blockers.some(reason=>reason.includes('90 minutes')));
+  assert.ok(result.blockers.some(reason=>reason.includes('known cost')));
+  assert.ok(result.questions.length>0);
+  assert.equal(evaluateActivity({...partial,duration:60,fee:0},{minutes:90,cost:15}).status,'More to check');
+});
 test('calendar files use complete UTC times and escape/fold user-entered text',()=>{
   const content=makeCalendar({title:'Café, meet; talk\nEND:VEVENT',location:'Lützowstraße 27',date:'2026-09-22',time:'15:00',duration:150,uid:'crochet-2026-09-22',description:'😊'.repeat(50),source:byId.get('crochet-tiergarten').source},new Date('2026-09-20T12:00:00Z'));
   assert.match(content,/DTSTART:20260922T130000Z\r\nDTEND:20260922T153000Z/);
