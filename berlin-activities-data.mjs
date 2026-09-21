@@ -55,7 +55,9 @@ const records = [
     schedule:'17 October 2026, 15:30–17:30', fee:0, cost:'Free entry.', language:'unknown', languageText:'Session language not stated.', booking:'Registration requested through the organiser’s page. Bring complete games in good condition; held in the WerkRaum.',
     description:'Swap board games, puzzles or cards and try a shared game. Adult and children’s items are exchanged separately until the open swap at 17:00.', tip:'Ask to join a short game before committing to a long one, and check whether the rules can be explained in your language.', source:pablo + 'spielfeld-tauschboerse-spieletreff-1518189.php'}
 ];
-export const activities = records.map(item => ({...item, ...venues[item.place], checkedOn}));
+// Weekday describes the published schedule only; it never creates a session date.
+const recurringWeekdays = {'sprachraum-pablo':[2],'sprachraum-wilhelm':[4],'sprachraum-raumer':[1],'english-book-club':[1],'knitting-pablo':[2],'sewing-pablo':[6],'retro-gaming':[5],'smartphone-cafe':[1]};
+export const activities = records.map(item => ({...item, ...venues[item.place], checkedOn, weekdays:recurringWeekdays[item.id] || [...new Set(item.dates.map(date=>new Date(date+'T12:00:00Z').getUTCDay()))]}));
 export const byId = new Map(activities.map(item => [item.id, item]));
 export function berlinToday(now = new Date()) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {timeZone:berlinZone, year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(now).map(part=>[part.type,part.value]));
@@ -78,6 +80,10 @@ export function matchesFilters(item, filters, today = berlinToday()) {
   if (filters.language && item.language !== filters.language) return false;
   if (filters.free && item.fee !== 0) return false;
   if (filters.duration && item.duration > Number(filters.duration)) return false;
+  if (filters.weekday !== undefined && filters.weekday !== '' && !item.weekdays.includes(Number(filters.weekday))) return false;
+  if (filters.startAfter && item.start < filters.startAfter) return false;
+  if (filters.finishBy && item.end > filters.finishBy) return false;
+  if (filters.startAfter && filters.finishBy && filters.startAfter >= filters.finishBy) return false;
   if (filters.when === 'unknown' && next) return false;
   if (['7','30'].includes(filters.when)) {
     const days = next ? (Date.parse(next) - Date.parse(today)) / 86400000 : Infinity;
