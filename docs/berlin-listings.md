@@ -2,7 +2,7 @@
 
 The first 15 programme cards were checked against linked official Berlin library pages on 20 September 2026. The collection is deliberately limited to four areas and is not a live booking feed. Kindred first-visit suggestions are editorial advice, not participant reviews.
 
-Edit `berlin-activities-data.mjs`, then run `node scripts/build-berlin-page.mjs` to regenerate the static, indexable page. Keep both data and generated HTML in the same commit. Run `node --test tests/berlin-tools.test.mjs` after changing dates, filters or calendar logic.
+Edit `berlin-activities-data.mjs`, then run `node scripts/build-berlin-page.mjs` to regenerate the static, indexable page. Keep both data and generated HTML in the same commit. Run `node --test tests/*.test.mjs` after changing dates, filters or calendar logic.
 
 Before advancing `checkedOn`, read every listed source again. Copy only explicit future session dates into `dates`; never infer a date from “every Tuesday”. If an overview and detail page disagree, exclude the date until resolved. The Klima GameNight listing was excluded because the overview and detail page showed conflicting dates/years.
 
@@ -14,4 +14,6 @@ The September source list includes three SprachRaum locations on one shared sour
 
 Visitor feedback is an email draft only. No review is fabricated or automatically published. Obtain and retain the contributor's optional permission before publishing an anonymised tip; remove names and private information about other people. Corrections can be handled privately without publication permission.
 
-Optional browser storage uses only `kindred-public-plan-v1` and `kindred-berlin-shortlist-v1`. There is no automatic saving, cross-device sync or analytics added by these tools. Deletion removes only the relevant tool's key.
+The planner and shortlist use `kindred-public-plan-v1` and `kindred-berlin-shortlist-v1`, only after an explicit save. The separate 30-day pilot uses `kindred-berlin-pilot-v1` only after its own opt-in. Pilot counters stay in this browser and are never sent automatically; they are not site-wide analytics. Each deletion removes only the relevant tool’s key. See `docs/berlin-pilot.md` for the five-person study and consent workflow.
+
+Weekday filters use `recurringWeekdays` for recurring schedules without dated sessions. Leave the weekday unknown if the source does not specify one. A weekday must never create a session date. When changing catalogue data, update the versioned data imports in the collection, first-visit helper and pilot module together, regenerate HTML, and bump the HTML asset versions and service-worker cache when needed.
