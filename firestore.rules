@@ -83,6 +83,14 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/profiles/$(uid))
         && get(/databases/$(database)/documents/profiles/$(uid)).data.adultConfirmed == true;
     }
+    function adultPostAttestation() {
+      return request.resource.data.get('adultConfirmed', false) == true;
+    }
+    function adultCommunityMember(uid) {
+      return signedIn()
+        && request.auth.uid == uid
+        && (adultProfile(uid) || adultPostAttestation());
+    }
     function meetupExists(meetupId) {
       return exists(/databases/$(database)/documents/meetups/$(meetupId));
     }
@@ -209,8 +217,8 @@ service cloud.firestore {
     match /forumPosts/{postId} {
       allow read: if resource.data.status == 'visible' || moderator();
       allow create: if signedIn()
-        && adultProfile(request.auth.uid)
-        && request.resource.data.keys().hasOnly(['authorId','authorName','category','country','city','text','status','createdAt'])
+        && adultCommunityMember(request.auth.uid)
+        && request.resource.data.keys().hasOnly(['authorId','authorName','category','country','city','text','status','adultConfirmed','createdAt'])
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.authorName is string
         && request.resource.data.authorName.size() >= 1
@@ -249,8 +257,8 @@ service cloud.firestore {
     match /meetups/{meetupId} {
       allow read: if resource.data.status in ['visible','cancelled'] || moderator();
       allow create: if signedIn()
-        && adultProfile(request.auth.uid)
-        && request.resource.data.keys().hasOnly(['creatorId','creatorName','type','city','country','language','date','time','details','status','createdAt'])
+        && adultCommunityMember(request.auth.uid)
+        && request.resource.data.keys().hasOnly(['creatorId','creatorName','type','city','country','language','date','time','details','status','adultConfirmed','createdAt'])
         && request.resource.data.creatorId == request.auth.uid
         && request.resource.data.creatorName is string
         && request.resource.data.creatorName.size() >= 1
@@ -282,9 +290,9 @@ service cloud.firestore {
       allow read: if meetupPublic(meetupId) || moderator();
       allow create, update: if signedIn()
         && uid == request.auth.uid
-        && adultProfile(request.auth.uid)
+        && adultCommunityMember(request.auth.uid)
         && meetupPublic(meetupId)
-        && request.resource.data.keys().hasOnly(['userId','userName','createdAt'])
+        && request.resource.data.keys().hasOnly(['userId','userName','adultConfirmed','createdAt'])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.userName is string
         && request.resource.data.userName.size() >= 1
