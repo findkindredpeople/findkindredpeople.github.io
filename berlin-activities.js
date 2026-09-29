@@ -10,6 +10,15 @@ const saveKey = 'kindred-berlin-shortlist-v1';
 const cards = new Map(activities.map(item => [item.id,$(item.id)]));
 const status = text => {$('activity-status').textContent = text;};
 const prettyDate = date => new Intl.DateTimeFormat('en-GB',{dateStyle:'full',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+const publicLink = ids => {
+  const url = new URL('https://findkindredpeople.com/berlin-activities.html');
+  url.searchParams.set('pick',ids.join(','));
+  return url.href;
+};
+function showShareLink(url) {
+  $('shortlist-link').value = url;
+  $('shortlist-link-box').hidden = false;
+}
 function readSaved() {
   const value = JSON.parse(localStorage.getItem(saveKey) || 'null');
   return value?.version === 1 && Array.isArray(value.ids) ? selectedIds(value.ids.join(',')) : [];
@@ -57,7 +66,15 @@ function filter() {
   selectionChanged();
 }
 document.querySelector('.activity-filters').hidden = false; $('shortlist').hidden = false;
-for (const card of cards.values()) {card.querySelector('.select-activity').hidden = false; card.querySelector('[data-visit]').hidden = false;}
+for (const [id,card] of cards) {
+  card.querySelector('.select-activity').hidden = false;
+  card.querySelector('[data-visit]').hidden = false;
+  const share = document.createElement('button');
+  share.type = 'button'; share.className = 'secondary-button'; share.dataset.share = id;
+  share.textContent = 'Share this activity';
+  share.setAttribute('aria-label','Share '+byId.get(id).title);
+  card.querySelector('.activity-actions').append(share);
+}
 for (const button of document.querySelectorAll('[data-preset]')) button.addEventListener('click',() => {
   $('filters').reset();
   const preset = button.dataset.preset;
@@ -80,9 +97,9 @@ $('activity-list').addEventListener('change',event => {
 for (const button of [$('compare-selected'),$('dock-compare')]) button.addEventListener('click',() => {if (selected.size >= 2) {track('compare'); location.href = 'compare-activities.html?berlin='+encodeURIComponent([...selected].join(','));}});
 $('share-shortlist').addEventListener('click',async () => {
   if (!selected.size) return;
-  const url = new URL('berlin-activities.html',location.href); url.searchParams.set('pick',[...selected].join(','));
-  $('shortlist-link').value = url.href; $('shortlist-link-box').hidden = false;
-  try {await navigator.clipboard.writeText(url.href); status('Shortlist link copied. Share it yourself; only public activity IDs are included.');}
+  const url = publicLink([...selected]);
+  showShareLink(url);
+  try {await navigator.clipboard.writeText(url); status('Shortlist link copied. Share it yourself; only public activity IDs are included.');}
   catch {$('shortlist-link').focus(); $('shortlist-link').select(); status('Copy the selected link to share your shortlist.');}
 });
 $('clear-shortlist').addEventListener('click',() => {selected.clear(); selectionChanged(); status('Selection cleared. Any saved shortlist is unchanged; use Delete saved to remove it.');});
@@ -95,7 +112,21 @@ $('restore-shortlist').addEventListener('click',() => {
   catch {status('The saved shortlist could not be read. You can delete it and save a new selection.');}
 });
 $('delete-shortlist').addEventListener('click',() => {try {localStorage.removeItem(saveKey); savedButtons(); status('Saved shortlist deleted from this browser. Your current selection is unchanged.');} catch {status('Browser storage is unavailable. You can clear this site’s data in your browser settings.');}});
-$('activity-list').addEventListener('click',event => {
+$('activity-list').addEventListener('click',async event => {
+  const share = event.target.closest('[data-share]');
+  if (share) {
+    const item = byId.get(share.dataset.share);
+    if (!item || isExpired(item)) {status('This dated activity has passed. Choose a current one to share.'); return;}
+    const url = publicLink([item.id]);
+    const message = `${item.title} in Berlin. Check the next date and joining details with the organiser before going.`;
+    try {
+      if (navigator.share) {await navigator.share({title:item.title,text:message,url}); status('Activity shared.'); return;}
+    } catch (error) {if (error.name === 'AbortError') return;}
+    showShareLink(url);
+    try {await navigator.clipboard.writeText(url); status('Public activity link copied. No personal details are included.');}
+    catch {$('shortlist-link').scrollIntoView({block:'center'}); $('shortlist-link').focus(); $('shortlist-link').select(); status('Copy the public activity link shown above.');}
+    return;
+  }
   const visit = event.target.closest('[data-visit]'); if (visit) openVisit(visit.dataset.visit);
   const button = event.target.closest('[data-calendar]'); if (!button) return;
   const item = byId.get(button.dataset.calendar), date = nextDate(item);
@@ -114,8 +145,9 @@ $('visit-feedback-form').addEventListener('input',event => {if (event.target.id 
 if ((Date.parse(berlinToday()) - Date.parse(checkedOn)) / 86400000 > 30) {$('freshness-note').hidden = false; $('freshness-note').textContent = 'These sources were last checked on 20 September 2026, more than 30 days ago. Details may have changed. Recheck every session on its organiser’s page.';}
 const shared = selectedIds(new URLSearchParams(location.search).get('pick'));
 shared.filter(id=>!isExpired(byId.get(id))).forEach(id=>selected.add(id));
-if (shared.length) status('Shared shortlist loaded. It is not saved on this device until you choose Save. Confirm dates before travelling.');
+if (shared.length) status(selected.size ? 'Shared activities loaded. They are not saved on this device until you choose Save. Confirm dates before travelling.' : 'The shared dated activity has passed. Browse current activities instead.');
 filter(); savedButtons();
+if (shared.length === 1 && selected.has(shared[0])) requestAnimationFrame(() => cards.get(shared[0]).scrollIntoView({block:'start'}));
 document.addEventListener('visibilitychange',() => {if (!document.hidden) filter();});
 
 function updateVisitMessage() {
