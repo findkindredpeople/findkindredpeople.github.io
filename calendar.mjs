@@ -29,14 +29,15 @@ export function foldLine(line) {
   }
   return result + current;
 }
-export function makeCalendar({title,location = '',description = '',date,time,duration,timeZone = 'Europe/Berlin',source = '',uid}, now = new Date()) {
+export function makeCalendar({title,location = '',description = '',date,time,duration,timeZone = 'Europe/Berlin',source = '',uid,language = 'en'}, now = new Date()) {
   if (!title.trim()) throw new Error('Give the calendar entry a title.');
   if (!Number.isInteger(Number(duration)) || Number(duration) < 1 || Number(duration) > 1440) throw new Error('Choose a duration between 1 and 1440 minutes.');
   const start = wallTimeToUTC(date,time,timeZone), end = new Date(+start + Number(duration)*60000);
   let url = '';
   if (source) {const parsed = new URL(source); if (!['http:','https:'].includes(parsed.protocol)) throw new Error('Use a web link for the source.'); url = parsed.href;}
   const safeUid = String(uid || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^a-zA-Z0-9@._-]/g,'').slice(0,160);
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Kindred//Personal visit plan//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${safeUid}@findkindredpeople.com`,`DTSTAMP:${stamp(now)}`,`DTSTART:${stamp(start)}`,`DTEND:${stamp(end)}`,`SUMMARY:${escapeText(title)}`,`LOCATION:${escapeText(location)}`,`DESCRIPTION:${escapeText(description + '\nA personal plan, not a booking. Confirm the date, availability and joining terms with the organiser.')}`,...(url ? [`URL:${url}`] : []),'STATUS:TENTATIVE','END:VEVENT','END:VCALENDAR'].map(foldLine).join('\r\n') + '\r\n';
+  const notice = language === 'de' ? 'Eine persönliche Vormerkung, keine Anmeldung oder Reservierung. Termin, freie Plätze und Teilnahmebedingungen beim Veranstalter prüfen.' : 'A personal plan, not a booking. Confirm the date, availability and joining terms with the organiser.';
+  return ['BEGIN:VCALENDAR','VERSION:2.0',`PRODID:-//Kindred//Personal visit plan//${language === 'de' ? 'DE' : 'EN'}`,'CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${safeUid}@findkindredpeople.com`,`DTSTAMP:${stamp(now)}`,`DTSTART:${stamp(start)}`,`DTEND:${stamp(end)}`,`SUMMARY:${escapeText(title)}`,`LOCATION:${escapeText(location)}`,`DESCRIPTION:${escapeText(description + '\n' + notice)}`,...(url ? [`URL:${url}`] : []),'STATUS:TENTATIVE','END:VEVENT','END:VCALENDAR'].map(foldLine).join('\r\n') + '\r\n';
 }
 export function downloadCalendar(event, filename = 'kindred-visit.ics') {
   const url = URL.createObjectURL(new Blob([makeCalendar(event)], {type:'text/calendar;charset=utf-8'}));
