@@ -1,6 +1,6 @@
 import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261003-2';
 import {localizeActivity} from './berlin-activities-de.mjs?v=20261003-1';
-import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup} from './berlin-discovery.mjs?v=20261003-1';
+import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount} from './berlin-discovery.mjs?v=20261003-2';
 import {downloadCalendar} from './calendar.mjs?v=20261003-1';
 const $=id=>document.getElementById(id),language=document.documentElement.lang==='de'?'de':'en',t=words[language],week=document.body.dataset.view==='week';
 const selected=new Set(),saveKey='kindred-berlin-shortlist-v1';
@@ -30,7 +30,7 @@ function render(){
  }
  $('discovery-list').innerHTML=entries.map(({item,date})=>cardMarkup(item,{language,date,session:week})).join('');
  document.querySelectorAll('[data-calendar],.select-activity').forEach(element=>{element.hidden=false;});
- $('discovery-count').textContent=`${entries.length} ${week?t.sessions:t.count}`;
+ $('discovery-count').textContent=resultCount(entries.length,language,week);
  $('date-range').textContent=week?`${t.period}: ${formatDate(today,language)} – ${formatDate(addDays(today,(Number(f.when)||7)-1),language)}`:t.all;
  $('discovery-empty').hidden=!!entries.length;$('empty-message').textContent=week?t.empty:t.none;$('discovery-widen').hidden=true;
  if(!entries.length&&f.when==='7'){

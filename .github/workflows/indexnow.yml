@@ -1,9 +1,13 @@
 name: Notify search engines after publication
 on:
-  workflow_run:
-    workflows: [pages build and deployment]
-    types: [completed]
+  push:
     branches: [main]
+    paths:
+      - '*.html'
+      - 'sitemap.xml'
+      - 'indexnow-key.txt'
+      - 'scripts/notify-indexnow.py'
+      - '.github/workflows/indexnow.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,14 +16,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   notify:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 2
           persist-credentials: false
-      - name: Submit changed public pages to IndexNow
+      - name: Wait for public pages, then submit to IndexNow
         run: python3 scripts/notify-indexnow.py

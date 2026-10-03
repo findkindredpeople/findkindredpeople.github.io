@@ -5,6 +5,10 @@ export const words = {
   en:{next:'Next published date',unknown:'Ask the organiser for the next date',when:'When',where:'Where',cost:'Cost',language:'Language',joining:'Joining',minutes:'minutes for the full session. Berlin time.',travel:'Travel costs are extra.',tip:'Kindred first-visit idea',source:'Organiser’s details',checked:'Source checked',plan:'Plan a visit',calendar:'Add a calendar reminder',select:'Add to comparison',count:'programmes match',sessions:'published sessions',empty:'No published sessions match this selection.',none:'No programmes match this selection.',later:'Next published date fitting your other choices:',next30:'Show the next 30 days',selected:'of 3 selected',max:'You can compare up to three programmes.',saved:'Shortlist saved on this device.',restored:'Saved selection restored.',deleted:'Saved shortlist deleted.',storageError:'This browser could not save or read the shortlist.',noSaved:'No saved shortlist found.',calendarDone:'Calendar file prepared. This is not a booking or registration.',calendarError:'The calendar file could not be created. Please use the organiser’s page.',period:'Date range',all:'All current programmes',fresh:'Sources were checked more than 30 days ago. Recheck current details with the organiser.'}
 };
 export const escapeHTML = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function resultCount(count,language='de',session=false){
+  if(language==='de')return `${count} ${session?(count===1?'veröffentlichter Termin':'veröffentlichte Termine'):(count===1?'passendes Angebot':'passende Angebote')}`;
+  return `${count} ${session?(count===1?'published session':'published sessions'):(count===1?'programme matches':'programmes match')}`;
+}
 export function formatDate(date, language='de') {
   return new Intl.DateTimeFormat(language==='de'?'de-DE':'en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }

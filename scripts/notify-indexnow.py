@@ -1,9 +1,11 @@
 """Notify participating search engines after the Pages deployment succeeds."""
 import json
+import hashlib
 from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
@@ -24,9 +26,25 @@ if '--dry-run' in sys.argv:
     print(json.dumps({'urls': urls}, indent=2))
     raise SystemExit(0)
 key_location = f'https://{host}/indexnow-key.txt'
-with urlopen(key_location, timeout=30) as response:
-    if response.read().decode().strip() != key:
-        raise SystemExit('The deployed verification file does not match. No URLs sent.')
+# GitHub Pages publishes independently of this workflow. Wait until a changed
+# page and the verification file both match this checkout before notifying.
+sample_url = urls[0]
+sample_path = Path(urlsplit(sample_url).path.lstrip('/') or 'index.html')
+expected = hashlib.sha256(sample_path.read_bytes()).digest()
+deadline = time.monotonic() + 180
+while True:
+    try:
+        with urlopen(key_location, timeout=15) as response:
+            key_matches = response.read().decode().strip() == key
+        with urlopen(sample_url, timeout=15) as response:
+            page_matches = hashlib.sha256(response.read()).digest() == expected
+        if key_matches and page_matches:
+            break
+    except Exception as error:
+        print(f'Waiting for publication: {type(error).__name__}', flush=True)
+    if time.monotonic() >= deadline:
+        raise SystemExit('The public deployment did not match in time. No URLs sent.')
+    time.sleep(5)
 payload = {'host': host, 'key': key, 'keyLocation': key_location, 'urlList': urls}
 request = Request('https://api.indexnow.org/indexnow', data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json; charset=utf-8'}, method='POST')
 with urlopen(request, timeout=45) as response:
