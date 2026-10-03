@@ -7,6 +7,8 @@ on:
       - '*.js'
       - '*.mjs'
       - 'tests/**'
+      - 'scripts/**'
+      - 'vendor/**'
       - '.github/workflows/content-checks.yml'
   workflow_dispatch:
 permissions:
@@ -24,3 +26,5 @@ jobs:
           node-version: '22'
       - run: node --test tests/*.test.mjs
       - run: node --check social-tools.js
+      - run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - run: node --check friendship-planner.js && node --check compare-activities.js && node --check berlin-discovery.js

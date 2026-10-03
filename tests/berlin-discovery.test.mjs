@@ -40,5 +40,5 @@ test('calendar keeps the published Berlin session time and German booking notice
  assert.match(event,/STATUS:TENTATIVE/);
  const card=cardMarkup(item,{language:'de',date:'2026-10-06'});
  assert.match(card,/datetime="2026-10-06"/);
- assert.match(card,/Besuch planen \(Englisch\)/);
+ assert.match(card,/freundschaftsplaner\.html\?berlin=knitting-pablo/);
 });

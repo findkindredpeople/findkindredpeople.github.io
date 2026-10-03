@@ -1,8 +1,10 @@
 import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261003-2';
 import {localizeActivity} from './berlin-activities-de.mjs?v=20261003-1';
-import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount} from './berlin-discovery.mjs?v=20261003-2';
+import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount,practiceCardMarkup} from './berlin-discovery.mjs?v=20261004-1';
 import {downloadCalendar} from './calendar.mjs?v=20261003-1';
+import {shortlistURL,shortlistSVG} from './shortlist-share.mjs?v=20261004-1';
 const $=id=>document.getElementById(id),language=document.documentElement.lang==='de'?'de':'en',t=words[language],week=document.body.dataset.view==='week';
+const sourceActivities=document.body.dataset.scope==='de-practice'?activities.filter(a=>a.language==='de'):activities;
 const selected=new Set(),saveKey='kindred-berlin-shortlist-v1';
 const status=text=>{$('discovery-status').textContent=text;};
 const filters=()=>({query:$('discovery-query').value,area:$('discovery-area').value,category:$('discovery-category').value,language:$('discovery-language').value,when:$('discovery-when').value,free:$('discovery-cost').value==='free'});
@@ -16,25 +18,28 @@ function updateSelection(){
  }
  $('selection-count').textContent=`${selected.size} ${t.selected}`;
  $('discovery-compare').disabled=selected.size<2;$('discovery-save').disabled=!selected.size;
+ $('discovery-share').disabled=!selected.size;
+ if(!selected.size)$('discovery-share-box').hidden=true;
+ if(!$('discovery-share-box').hidden)showShare();
 }
 function render(){
  const now=new Date(),today=berlinToday(now),f=filters();
  let entries;
  if(week){
-  const matching=activities.filter(item=>discoveryMatch(item,{...f,when:''},today,language));
+  const matching=sourceActivities.filter(item=>discoveryMatch(item,{...f,when:''},today,language));
   entries=futureSessions(matching,{now,days:Number(f.when)||7});
  }else{
-  entries=currentProgrammes(activities,today).filter(item=>discoveryMatch(item,f,today,language))
+  entries=currentProgrammes(sourceActivities,today).filter(item=>discoveryMatch(item,f,today,language))
    .sort((a,b)=>(nextDate(a,today)||'9999').localeCompare(nextDate(b,today)||'9999')||localizeActivity(a,language).title.localeCompare(localizeActivity(b,language).title))
    .map(item=>({item,date:nextDate(item,today)}));
  }
- $('discovery-list').innerHTML=entries.map(({item,date})=>cardMarkup(item,{language,date,session:week})).join('');
+ $('discovery-list').innerHTML=entries.map(({item,date})=>document.body.dataset.scope==='de-practice'?practiceCardMarkup(item):cardMarkup(item,{language,date,session:week})).join('');
  document.querySelectorAll('[data-calendar],.select-activity').forEach(element=>{element.hidden=false;});
  $('discovery-count').textContent=resultCount(entries.length,language,week);
  $('date-range').textContent=week?`${t.period}: ${formatDate(today,language)} – ${formatDate(addDays(today,(Number(f.when)||7)-1),language)}`:t.all;
  $('discovery-empty').hidden=!!entries.length;$('empty-message').textContent=week?t.empty:t.none;$('discovery-widen').hidden=true;
  if(!entries.length&&f.when==='7'){
-  const fitting=activities.filter(item=>discoveryMatch(item,{...f,when:''},today,language));
+  const fitting=sourceActivities.filter(item=>discoveryMatch(item,{...f,when:''},today,language));
   const later=futureSessions(fitting,{now,days:365})[0];
   if(later){$('empty-message').textContent+=` ${t.later} ${formatDate(later.date,language)}.`;$('discovery-widen').hidden=Date.parse(later.date)-Date.parse(today)>=30*86400000;}
  }
@@ -45,7 +50,7 @@ const initial=new URLSearchParams(location.search);
 for(const [param,id] of [['language','discovery-language'],['area','discovery-area'],['category','discovery-category']]){
  const value=initial.get(param),control=$(id);if(value&&[...control.options].some(option=>option.value===value))control.value=value;
 }
-const currentIds=new Set(currentProgrammes(activities).map(item=>item.id));
+const currentIds=new Set(currentProgrammes(sourceActivities).map(item=>item.id));
 for(const id of selectedIds(initial.get('pick')).filter(id=>currentIds.has(id)))selected.add(id);
 $('discovery-filters').addEventListener('submit',event=>event.preventDefault());
 $('discovery-filters').addEventListener('input',render);
@@ -63,7 +68,7 @@ $('discovery-list').addEventListener('click',event=>{
  const a=localizeActivity(item,language);
  try{downloadCalendar({title:a.title,location:`${a.venue}, ${a.address}`,description:`${a.booking} ${a.cost}`,date,time:a.start,duration:a.duration,source:a.source,language},`kindred-${a.id}-${date}.ics`);status(t.calendarDone);}catch{status(t.calendarError);}
 });
-$('discovery-compare').onclick=()=>{if(selected.size>=2)location.href='compare-activities.html?berlin='+encodeURIComponent([...selected].join(','));};
+$('discovery-compare').onclick=()=>{if(selected.size>=2)location.href=(language==='de'?'angebote-vergleichen.html':'compare-activities.html')+'?berlin='+encodeURIComponent([...selected].join(','));};
 $('discovery-save').onclick=()=>{try{localStorage.setItem(saveKey,JSON.stringify({version:1,ids:[...selected]}));status(t.saved);}catch{status(t.storageError);}};
 $('discovery-restore').onclick=()=>{
  try{const saved=JSON.parse(localStorage.getItem(saveKey)||'null'),ids=saved?.version===1&&Array.isArray(saved.ids)?selectedIds(saved.ids.join(',')).filter(id=>currentIds.has(id)):[];
@@ -73,3 +78,20 @@ $('discovery-restore').onclick=()=>{
 $('discovery-delete').onclick=()=>{try{localStorage.removeItem(saveKey);status(t.deleted);}catch{status(t.storageError);}};
 if(Date.parse(berlinToday())-Date.parse(checkedOn)>30*86400000){$('freshness-note').hidden=false;$('freshness-note').textContent=t.fresh;}
 render();
+
+function showShare(){
+ $('discovery-share-url').value=shortlistURL(selected,language);
+ $('discovery-share-qr').innerHTML=shortlistSVG(selected,language);
+ $('discovery-share-box').hidden=false;
+}
+$('discovery-share').onclick=async()=>{
+ if(!selected.size)return;showShare();
+ try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText($('discovery-share-url').value);status(language==='de'?'Link kopiert. Du kannst ihn selbst weitergeben.':'Link copied. You can share it yourself.');}
+ catch{$('discovery-share-url').focus();$('discovery-share-url').select();status(language==='de'?'Kopiere den markierten Link. Der QR-Code enthält dieselbe Auswahl.':'Copy the selected link. The QR code contains the same selection.');}
+};
+$('discovery-qr-download').onclick=()=>{
+ if(!selected.size)return;
+ const url=URL.createObjectURL(new Blob([shortlistSVG(selected,language)],{type:'image/svg+xml;charset=utf-8'})),link=document.createElement('a');
+ link.href=url;link.download='kindred-shortlist-qr.svg';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ status(language==='de'?'QR-Code heruntergeladen. Er enthält nur die ausgewählten öffentlichen Angebote.':'QR code downloaded. It contains only the selected public activities.');
+};

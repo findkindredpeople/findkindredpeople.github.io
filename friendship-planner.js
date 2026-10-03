@@ -1,6 +1,8 @@
 import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs';
 import {downloadCalendar} from './calendar.mjs';
-import {storageKey,invitationFields,calendarFields,validSavedPlan} from './planner-storage.mjs';
+import {storageKey as englishStorageKey,invitationFields,calendarFields,validSavedPlan} from './planner-storage.mjs';
+import {toolText,germanPlan} from './german-tools.mjs?v=20261004-1';
+import {localizeActivity} from './berlin-activities-de.mjs';
 (() => {
   'use strict';
   const form = document.getElementById('planner-form');
@@ -8,6 +10,7 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
   const $ = id => document.getElementById(id);
   const budgets = {30: [5, 5, 0, 15, 0, 0, 5], 60: [5, 10, 0, 30, 5, 0, 10], 120: [10, 15, 0, 60, 10, 15, 10]};
   const titles = {start: 'Find one place worth returning to', follow: 'Turn one good conversation into a next step', keep: 'Give an existing friendship a realistic rhythm'};
+  const language=document.documentElement.lang==='de'?'de':'en', de=language==='de', t=text=>toolText(text,language), storageKey=de?'kindred-public-plan-de-v1':englishStorageKey;
   let current, importedActivity;
   function personalize(invitation) {
     const values = {
@@ -73,6 +76,7 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
     }
     invitation = personalize(invitation);
     const note = /\[[^\]]+\]/.test(invitation) ? 'Some bracketed details are still missing. Fill them in below or edit your copied message before sending.' : 'Your details are included. Check the wording, day, time and place before sending.';
+    if (de) return germanPlan(options,invitation);
     return {options, title: titles[goal], summary: `${budget} minutes across the week · ${online ? 'Online, without travel' : 'In person; add travel time separately'} · ${quiet ? 'Quiet conversation' : 'Shared activity'}`, boundary: online ? 'Use a moderated or agreed meeting space. Check time zones and recording rules; keep personal details private. A call happens only after both people agree.' : 'Choose a public place and check the organiser, cost, access and next date before going. Keep your own way home. A meeting happens only after both people agree.', tasks, minutes, invitation, note: note + ' This page does not send messages or book activities.'};
   }
   function render(announce, options) {
@@ -86,20 +90,20 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
     current.tasks.forEach((task, i) => {
       const li = document.createElement('li'), label = document.createElement('label'), input = document.createElement('input'), text = document.createElement('span'), p = document.createElement('p');
       input.type = 'checkbox';
-      input.setAttribute('aria-label', `Mark day ${i + 1} as complete`);
-      text.textContent = `Day ${i + 1} · ${current.minutes[i] ? `${current.minutes[i]} min` : 'Rest'}`;
+      input.setAttribute('aria-label', de?`Tag ${i + 1} als erledigt markieren`:`Mark day ${i + 1} as complete`);
+      text.textContent = `${de?'Tag':'Day'} ${i + 1} · ${current.minutes[i] ? `${current.minutes[i]} min` : de?'Pause':'Rest'}`;
       p.id = `day-description-${i + 1}`;
       p.textContent = task;
       input.setAttribute('aria-describedby', p.id);
       label.append(input, text); li.append(label, p); $('plan-steps').append(li);
     });
     $('copy-fallback').hidden = true;
-    $('planner-status').textContent = announce ? 'Your plan is ready. Check off steps as you go, or keep a copy.' : '';
+    $('planner-status').textContent = announce ? t('Your plan is ready. Check off steps as you go, or keep a copy.') : '';
     if (announce) $('plan-heading').focus();
   }
   function planText() {
     const checked = [...$('plan-steps').querySelectorAll('input')];
-    return `KINDRED — ${current.title}\n${current.summary}\n\n${current.boundary}\n\n` + current.tasks.map((t, i) => `[${checked[i].checked ? 'x' : ' '}] Day ${i + 1} (${current.minutes[i] ? current.minutes[i] + ' min' : 'Rest'}): ${t}`).join('\n\n') + `\n\nA MESSAGE TO ADAPT\n${current.note}\n\n${current.invitation}\n\nhttps://findkindredpeople.com/friendship-planner.html\n`;
+    return `KINDRED — ${current.title}\n${current.summary}\n\n${current.boundary}\n\n` + current.tasks.map((t, i) => `[${checked[i].checked ? 'x' : ' '}] ${de?'Tag':'Day'} ${i + 1} (${current.minutes[i] ? current.minutes[i] + ' min' : de?'Pause':'Rest'}): ${t}`).join('\n\n') + `\n\n${de?'EINE NACHRICHT ZUM ANPASSEN':'A MESSAGE TO ADAPT'}\n${current.note}\n\n${current.invitation}\n\nhttps://findkindredpeople.com/${de?'freundschaftsplaner.html':'friendship-planner.html'}\n`;
   }
   form.hidden = false;
   $('plan-actions').hidden = false;
@@ -110,36 +114,36 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
     const next = makePlan(current.options);
     current.invitation = next.invitation; current.note = next.note;
     $('invitation').textContent = current.invitation; $('message-note').textContent = current.note;
-    $('planner-status').textContent = 'Invitation updated. Your checklist is unchanged.';
+    $('planner-status').textContent = t('Invitation updated. Your checklist is unchanged.');
   });
   form.addEventListener('submit', event => {event.preventDefault(); render(true);});
-  form.addEventListener('change', () => {$('planner-status').textContent = 'Choices changed. Select “Build my week” to update the plan.';});
+  form.addEventListener('change', () => {$('planner-status').textContent = t('Choices changed. Select “Build my week” to update the plan.');});
   $('copy-plan').addEventListener('click', async () => {
     const text = planText();
-    try {if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable'); await navigator.clipboard.writeText(text); $('planner-status').textContent = 'Plan copied.';}
-    catch { $('copy-fallback').hidden = false; $('plan-text').value = text; $('plan-text').focus(); $('plan-text').select(); $('planner-status').textContent = 'Automatic copying is unavailable. Copy the selected text below.'; }
+    try {if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable'); await navigator.clipboard.writeText(text); $('planner-status').textContent = t('Plan copied.');}
+    catch { $('copy-fallback').hidden = false; $('plan-text').value = text; $('plan-text').focus(); $('plan-text').select(); $('planner-status').textContent = t('Automatic copying is unavailable. Copy the selected text below.'); }
   });
   $('download-plan').addEventListener('click', () => {
     const url = URL.createObjectURL(new Blob([planText()], {type: 'text/plain;charset=utf-8'}));
     const link = document.createElement('a');link.href = url;link.download = 'kindred-friendship-plan.txt';document.body.append(link);link.click();link.remove();setTimeout(() => URL.revokeObjectURL(url), 1000);
-    $('planner-status').textContent = 'Your text download has started.';
+    $('planner-status').textContent = t('Your text download has started.');
   });
   $('print-plan').addEventListener('click', () => window.print());
   const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (deviceZone && !['Europe/Berlin','UTC'].includes(deviceZone)) {
-    const option = document.createElement('option'); option.value = deviceZone; option.textContent = deviceZone + ' · this device'; $('calendar-zone').append(option);
+    const option = document.createElement('option'); option.value = deviceZone; option.textContent = deviceZone + (de?' · dieses Gerät':' · this device'); $('calendar-zone').append(option);
   }
   $('calendar-zone').value = deviceZone || 'Europe/Berlin';
   function showImportedActivity() {
     const notice = $('planner-import'); notice.replaceChildren(); notice.hidden = !importedActivity;
     if (!importedActivity) return;
-    const link = document.createElement('a'); link.href = importedActivity.source; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Check the organiser’s details';
-    notice.append(`${importedActivity.title} · full session window ${importedActivity.duration} minutes. This is separate from your weekly planning budget. Confirm the date, cost and booking before going. `,link);
+    const link = document.createElement('a'); link.href = importedActivity.source; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = t('Check the organiser’s details');
+    notice.append(de?`${localizeActivity(importedActivity).title} · gesamte Veranstaltung: ${importedActivity.duration} Minuten. Das ist unabhängig von deinem Wochenbudget. Prüfe Termin, Kosten und Anmeldung vor dem Besuch. `:`${importedActivity.title} · full session window ${importedActivity.duration} minutes. This is separate from your weekly planning budget. Confirm the date, cost and booking before going. `,link);
   }
   importedActivity = byId.get(selectedIds(new URLSearchParams(location.search).get('berlin'))[0]);
   if (importedActivity) {
-    const item = importedActivity, date = nextDate(item);
-    $('invite-activity').value = item.title; $('invite-place').value = item.venue; $('invite-time').value = item.start + ' Berlin time';
+    const item = localizeActivity(importedActivity,language), date = nextDate(item);
+    $('invite-activity').value = item.title; $('invite-place').value = item.venue; $('invite-time').value = item.start + (de?' Berliner Zeit':' Berlin time');
     if (date) $('invite-day').value = date;
     $('calendar-title').value = item.title; $('calendar-place').value = `${item.venue}, ${item.address}`;
     $('calendar-date').value = date || ''; $('calendar-time').value = item.start; $('calendar-duration').value = item.duration; $('calendar-zone').value = 'Europe/Berlin';
@@ -150,13 +154,13 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
     try {
       const raw = localStorage.getItem(storageKey), saved = validSavedPlan(JSON.parse(raw || 'null'));
       $('restore-plan').disabled = !saved; $('delete-plan').disabled = !raw;
-      $('saved-plan-info').textContent = saved ? `A plan was saved in this browser on ${new Date(saved.savedAt).toLocaleString()}. It is not loaded automatically.` : raw ? 'The saved plan could not be read. Delete it or replace it with your current plan.' : 'No plan saved in this browser.';
-    } catch {$('restore-plan').disabled = true; $('delete-plan').disabled = false; $('saved-plan-info').textContent = 'Browser storage is unavailable or the saved plan could not be read. You can still download a copy.';}
+      $('saved-plan-info').textContent = saved ? de?`In diesem Browser wurde am ${new Date(saved.savedAt).toLocaleString('de-DE')} ein Plan gespeichert. Er wird nicht automatisch geladen.`:`A plan was saved in this browser on ${new Date(saved.savedAt).toLocaleString()}. It is not loaded automatically.` : raw ? t('The saved plan could not be read. Delete it or replace it with your current plan.') : t('No plan saved in this browser.');
+    } catch {$('restore-plan').disabled = true; $('delete-plan').disabled = false; $('saved-plan-info').textContent = t('Browser storage is unavailable or the saved plan could not be read. You can still download a copy.');}
   }
   $('save-plan').addEventListener('click',() => {
     const snapshot = {version:1,options:current.options,checked:[...$('plan-steps').querySelectorAll('input')].map(input=>input.checked),invitation:current.invitation,note:current.note,savedAt:new Date().toISOString(),fields:Object.fromEntries(invitationFields.map(key=>[key,$('invite-'+key).value])),calendar:Object.fromEntries(calendarFields.map(key=>[key,$('calendar-'+key).value])),activityId:importedActivity?.id || ''};
-    try {localStorage.setItem(storageKey,JSON.stringify(snapshot)); savedState(); $('planner-status').textContent = 'Displayed plan, ticks, invitation drafts and calendar fields saved on this device. Later edits are not saved automatically.';}
-    catch {$('planner-status').textContent = 'The browser could not save this plan. Use Download .txt to keep a copy.';}
+    try {localStorage.setItem(storageKey,JSON.stringify(snapshot)); savedState(); $('planner-status').textContent = t('Displayed plan, ticks, invitation drafts and calendar fields saved on this device. Later edits are not saved automatically.');}
+    catch {$('planner-status').textContent = t('The browser could not save this plan. Use Download .txt to keep a copy.');}
   });
   $('restore-plan').addEventListener('click',() => {
     try {
@@ -169,15 +173,16 @@ import {storageKey,invitationFields,calendarFields,validSavedPlan} from './plann
       render(false,o); current.invitation = saved.invitation; current.note = saved.note; $('invitation').textContent = current.invitation; $('message-note').textContent = current.note;
       [...$('plan-steps').querySelectorAll('input')].forEach((input,i)=>{input.checked = saved.checked[i];});
       importedActivity = byId.get(saved.activityId); showImportedActivity();
-      $('planner-status').textContent = 'Saved plan restored. Check saved dates before using them; later edits need Save on this device again.'; $('plan-heading').focus();
-    } catch {$('planner-status').textContent = 'The saved plan could not be restored. You can delete it and save a new one.';}
+      $('planner-status').textContent = t('Saved plan restored. Check saved dates before using them; later edits need Save on this device again.'); $('plan-heading').focus();
+    } catch {$('planner-status').textContent = t('The saved plan could not be restored. You can delete it and save a new one.');}
   });
-  $('delete-plan').addEventListener('click',() => {try {localStorage.removeItem(storageKey); savedState(); $('planner-status').textContent = 'Saved plan deleted from this browser. The currently displayed plan stays open.';} catch {$('planner-status').textContent = 'Browser storage is unavailable. Clear this site’s data in your browser settings to remove stored plans.';}});
+  $('delete-plan').addEventListener('click',() => {try {localStorage.removeItem(storageKey); savedState(); $('planner-status').textContent = t('Saved plan deleted from this browser. The currently displayed plan stays open.');} catch {$('planner-status').textContent = t('Browser storage is unavailable. Clear this site’s data in your browser settings to remove stored plans.');}});
   $('calendar-form').addEventListener('submit',event => {
     event.preventDefault();
-    try {downloadCalendar({title:$('calendar-title').value,location:$('calendar-place').value,date:$('calendar-date').value,time:$('calendar-time').value,duration:$('calendar-duration').value,timeZone:$('calendar-zone').value,description:'Your Kindred visit plan. Include travel time separately.',source:importedActivity?.source || ''}); $('calendar-status').textContent = 'Calendar download started. Import the .ics file into your calendar. This does not send an invitation or reserve a place.';}
-    catch (error) {$('calendar-status').textContent = error.message;}
+    try {downloadCalendar({title:$('calendar-title').value,location:$('calendar-place').value,date:$('calendar-date').value,time:$('calendar-time').value,duration:$('calendar-duration').value,timeZone:$('calendar-zone').value,description:t('Your Kindred visit plan. Include travel time separately.'),language,source:importedActivity?.source || ''}); $('calendar-status').textContent = t('Calendar download started. Import the .ics file into your calendar. This does not send an invitation or reserve a place.');}
+    catch (error) {$('calendar-status').textContent = t(error.message);}
   });
   render(false);
   savedState();
+  const languageLink=$('tool-language');if(languageLink){const ids=selectedIds(new URLSearchParams(location.search).get('berlin'));if(ids.length){const url=new URL(languageLink.getAttribute('href'),location.href);url.searchParams.set('berlin',ids.join(','));languageLink.href=url.href;}}
 })();

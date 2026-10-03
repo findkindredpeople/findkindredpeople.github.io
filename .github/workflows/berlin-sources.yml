@@ -1,0 +1,38 @@
+name: Check Berlin source changes
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'berlin-activities-data.mjs'
+      - 'scripts/check-berlin-sources.py'
+      - 'scripts/berlin-source-list.json'
+      - '.github/workflows/berlin-sources.yml'
+permissions:
+  contents: read
+concurrency:
+  group: kindred-berlin-source-check
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/cache@v4
+        with:
+          path: .source-check
+          key: kindred-source-observations-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: kindred-source-observations-
+      - name: Read official source pages and compare with previous observations
+        run: python3 scripts/check-berlin-sources.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: berlin-source-check
+          path: source-report/berlin-source-check.json
+          retention-days: 30
