@@ -1,4 +1,4 @@
-import {activities,byId,checkedOn,berlinToday,nextDate,isExpired,selectedIds,matchesFilters} from './berlin-activities-data.mjs?v=20260921-1';
+import {activities,byId,checkedOn,berlinToday,nextDate,isExpired,selectedIds,matchesFilters} from './berlin-activities-data.mjs?v=20261003-2';
 import {firstVisitMessage} from './first-visit.mjs?v=20260921-1';
 import {trackPilot} from './pilot-metrics.mjs?v=20260921-1';
 import {refreshPilot} from './berlin-pilot.js?v=20260921-1';
@@ -63,6 +63,13 @@ function filter() {
   }
   $('activity-count').textContent = `${count} ${count === 1 ? 'programme' : 'programmes'} match · ${dated} with a published date · ${count-dated} need a date confirmed`;
   $('no-activities').hidden = count !== 0;
+  $('widen-dates').hidden = filters.when !== '7';
+  if(!count){
+    const candidates=sorted.filter(item=>matchesFilters(item,{...filters,when:''},today));
+    const next=candidates.map(item=>nextDate(item,today)).filter(Boolean).sort()[0];
+    const undated=candidates.filter(item=>!nextDate(item,today)).length;
+    $('empty-activity-message').textContent='No programmes match all your filters.'+(filters.when==='7'&&next?' The next published date fitting your other choices is '+prettyDate(next)+'.':' Try a wider date range or another area.')+(undated?' '+undated+' recurring '+(undated===1?'programme needs':'programmes need')+' a date confirmed with the organiser.':'');
+  }
   selectionChanged();
 }
 document.querySelector('.activity-filters').hidden = false; $('shortlist').hidden = false;
@@ -84,6 +91,7 @@ for (const button of document.querySelectorAll('[data-preset]')) button.addEvent
   if (preset === 'german') $('filter-language').value = 'de';
   filter();
 });
+$('widen-dates').addEventListener('click',()=>{$('filter-when').value='30';filter();});
 $('reset-empty').addEventListener('click',()=>{$('filters').reset(); filter(); $('activity-query').focus();});
 $('filters').addEventListener('input',filter); $('filters').addEventListener('submit',event => event.preventDefault());
 $('filters').addEventListener('reset',() => setTimeout(filter,0));
@@ -142,7 +150,7 @@ $('visit-feedback-form').addEventListener('submit',event => {
   $('feedback-text').value = body; $('feedback-email').href = `mailto:nadiiahonda34@gmail.com?subject=${encodeURIComponent('Kindred: Berlin first-visit tip')}&body=${encodeURIComponent(body)}`; $('feedback-draft').hidden = false; $('feedback-status').textContent = 'Draft prepared. Read it, then open your email app or copy it. Nothing has been sent.'; $('feedback-text').focus();
 });
 $('visit-feedback-form').addEventListener('input',event => {if (event.target.id !== 'feedback-text') {$('feedback-draft').hidden = true; $('feedback-status').textContent = 'Details changed. Prepare a new draft before sending.';}});
-if ((Date.parse(berlinToday()) - Date.parse(checkedOn)) / 86400000 > 30) {$('freshness-note').hidden = false; $('freshness-note').textContent = 'These sources were last checked on 20 September 2026, more than 30 days ago. Details may have changed. Recheck every session on its organiser’s page.';}
+if ((Date.parse(berlinToday()) - Date.parse(checkedOn)) / 86400000 > 30) {$('freshness-note').hidden = false; $('freshness-note').textContent = 'Current sources were last checked on '+prettyDate(checkedOn)+', more than 30 days ago. Details may have changed. Recheck every session on its organiser’s page.';}
 const shared = selectedIds(new URLSearchParams(location.search).get('pick'));
 shared.filter(id=>!isExpired(byId.get(id))).forEach(id=>selected.add(id));
 if (shared.length) status(selected.size ? 'Shared activities loaded. They are not saved on this device until you choose Save. Confirm dates before travelling.' : 'The shared dated activity has passed. Browse current activities instead.');

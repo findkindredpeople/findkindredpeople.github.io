@@ -1,5 +1,5 @@
 // Source pages were read on this date. Never advance it without checking them again.
-export const checkedOn = '2026-09-20';
+export const checkedOn = '2026-10-03';
 export const berlinZone = 'Europe/Berlin';
 const root = 'https://www.berlin.de/stadtbibliothek-friedrichshain-kreuzberg/';
 const pablo = root + 'bibliotheken/bezirkszentralbibliothek-pablo-neruda/veranstaltungen-projekte/';
@@ -11,7 +11,7 @@ const venues = {
   tiergarten: {venue: 'Bibliothek Tiergarten-Süd', address: 'Lützowstraße 27, 10785 Berlin', area: 'Tiergarten'},
   hansa: {venue: 'Hansabibliothek', address: 'Altonaer Straße 15, 10557 Berlin', area: 'Hansaviertel'}
 };
-const autumnTuesdays = ['2026-09-22', '2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24'];
+const autumnTuesdays = ['2026-09-22', '2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24', '2026-12-08'];
 const records = [
   {id:'crochet-tiergarten', title:'Crochet together', original:'Gemeinsam Häkeln', place:'tiergarten', category:'Crafts', dates:autumnTuesdays, start:'15:00', end:'17:30', duration:150, recurring:true,
     schedule:'Published Tuesdays, 15:00–17:30', fee:null, cost:'Fee not stated; materials are provided.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Beginners and experienced makers are welcome; mixed ages, 8 and up.',
@@ -24,14 +24,14 @@ const records = [
     {id:'sprachraum-wilhelm', place:'wilhelm', schedule:'Thursdays, 15:00–16:30', start:'15:00', end:'16:30', duration:90},
     {id:'sprachraum-raumer', place:'raumer', schedule:'Mondays, 11:30–13:00, starting October 2026', start:'11:30', end:'13:00', duration:90, startsIn:'2026-10'}
   ].map(item => ({...item, title:'SprachRaum · ' + venues[item.place].venue.split('-Bibliothek')[0], original:'SprachRaum', category:'Languages', dates:[], recurring:true, fee:0, cost:'Free entry.', language:'de', languageText:'German practice; beginners welcome.', booking:'No registration.', description:'An informal place to practise German with others at different levels.', tip:'Prepare one everyday question you would like to practise asking.', source:root + 'aktuelles/veranstaltungen-ausstellungen/sprachraum-1601921.php'})),
-  {id:'english-book-club', title:'English-language book club', original:'English-Language Book Club', place:'pablo', category:'Books', dates:[], start:'17:30', end:'19:00', duration:90, recurring:true,
-    schedule:'Second Monday of the month, 17:30–19:00; ask for the next date and book', fee:null, cost:'Fee not stated.', language:'en', languageText:'English; native and non-native speakers welcome.', booking:'Registration required. Read the selected book first; ask the organiser for the current title.',
-    description:'Discuss a shared book in English. The last dated session on the source was 14 September 2026, so the next selection needs checking.', tip:'Write down one passage or question in advance; you do not need a complete literary analysis.', source:pablo + 'english-language-book-club-1603589.php'},
+  {id:'english-book-club', title:'English-language book club', original:'English-Language Book Club', place:'pablo', category:'Books', dates:['2026-10-12','2026-11-09','2026-12-14'], start:'17:30', end:'19:00', duration:90, recurring:true,
+    schedule:'Second Monday of the month, 17:30–19:00; ask for the selected book', fee:null, cost:'Fee not stated.', language:'en', languageText:'English; native and non-native speakers welcome.', booking:'Registration required. Read the selected book first; ask the organiser for the current title.',
+    description:'Discuss contemporary fiction in English. The organiser publishes autumn dates; ask which book to read before booking.', tip:'Write down one passage or question in advance; you do not need a complete literary analysis.', source:pablo + 'english-language-book-club-1603589.php'},
   {id:'silent-book-club', title:'Silent Book Club Xhain', original:'Silent Book Club Xhain', place:'pablo', category:'Books', dates:['2026-10-20','2026-11-17','2026-12-15'], start:'18:30', end:'20:30', duration:120, recurring:true,
     schedule:'Published Tuesdays, 18:30–20:30', fee:0, cost:'Free entry.', language:'unknown', languageText:'Read in your own language; conversation language not stated.', booking:'No registration. Bring a book or borrow one; introductions are optional.',
     description:'A quiet reading hour sits between an optional introduction and time to wind down. Everyone can choose their own book.', tip:'This is a low-pressure first visit if you enjoy company without needing continuous conversation.', source:pablo + 'silent-book-club-xhain-1531452.php'},
-  {id:'knitting-pablo', title:'Knitting and crochet group', original:'Stricktreff', place:'pablo', category:'Crafts', dates:[], start:'15:30', end:'17:30', duration:120, recurring:true,
-    schedule:'First Tuesday of the month, 15:30–17:30', fee:0, materialsUnknown:true, cost:'Free entry; bring your own project. Material costs are not listed.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Beginners and experienced participants welcome.',
+  {id:'knitting-pablo', title:'Knitting and crochet group', original:'Stricktreff', place:'pablo', category:'Crafts', dates:['2026-10-06','2026-11-03','2026-11-17','2026-12-01','2026-12-15'], start:'15:30', end:'17:30', duration:120, recurring:true,
+    schedule:'First Tuesday of the month; also third Tuesdays from November, 15:30–17:30', fee:0, materialsUnknown:true, cost:'Free entry; bring your own project. Material costs are not listed.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Beginners and experienced participants welcome. First Tuesdays include library-team support; third Tuesdays from November are an independent open group.',
     description:'Work on your knitting or crochet project alongside other makers and exchange help.', tip:'Choose a small project you can carry easily and ask whether someone can show you one technique.', source:pablo + 'stricktreff-fuer-anfaenger-innen-fortgeschrittene-1622246.php'},
   {id:'sewing-pablo', title:'Sewing café', original:'Nähcafé', place:'pablo', category:'Crafts', dates:[], start:'10:30', end:'14:30', duration:240, recurring:true,
     schedule:'First and third Saturday of the month, 10:30–14:30', fee:0, materialsUnknown:true, cost:'Free entry; bring fabric and patterns. Material costs are not listed.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Beginners welcome. Held in the WerkRaum.',
@@ -45,10 +45,10 @@ const records = [
   {id:'smartphone-cafe', title:'Smartphone café', original:'Smartphone Café', place:'wilhelm', category:'Everyday skills', dates:[], start:'11:00', end:'12:00', duration:60, recurring:true,
     schedule:'Mondays, 11:00–12:00', fee:0, cost:'Free entry.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Bring your smartphone; ground-floor café.',
     description:'Work through everyday phone questions with others in an informal café setting.', tip:'Bring one question to discuss. Keep passwords, financial details and private messages off the shared screen.', source:wilhelm + 'smartphone-cafe-gemeinsam-loesen-wir-ihre-handy-probleme-1658266.php'},
-  {id:'clothing-swap', title:'Adult clothing swap', original:'Kleidertauschparty', place:'wilhelm', category:'Swaps', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
+  {id:'clothing-swap', title:'Adult clothing swap', checkedOn:'2026-09-20', original:'Kleidertauschparty', place:'wilhelm', category:'Swaps', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
     schedule:'26 September 2026, 11:00–14:00', fee:0, cost:'Free entry.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Up to 10 clean, undamaged adult garments. No shoes, accessories, underwear, socks, bedding or children’s clothes.',
     description:'Exchange adult clothing at the library. Check the accepted items before packing a bag.', tip:'Use a question about an item as a small conversation starter, without commenting on anyone’s body.', source:wilhelm + 'kleidertauschparty-1425205.php'},
-  {id:'language-trail', title:'Try a language: Europa spricht!', original:'Europa spricht! Sprachen-Parcours', place:'pablo', category:'Languages', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
+  {id:'language-trail', title:'Try a language: Europa spricht!', checkedOn:'2026-09-20', original:'Europa spricht! Sprachen-Parcours', place:'pablo', category:'Languages', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
     schedule:'26 September 2026, 11:00–14:00', fee:0, cost:'Free entry.', language:'multi', languageText:'Language tasters; ask about the instruction language.', booking:'No registration or previous language knowledge required.',
     description:'Try activities in languages including Greek, French, Polish, Italian, Spanish, Turkish, Chinese and Japanese with the district adult-education programme.', tip:'Pick one language station and ask another visitor which word they have just learned.', source:pablo + 'europa-spricht-sprachen-parcours-zum-europaeischen-tag-der-sprachen-1604533.php'},
   {id:'board-game-swap', title:'Board-game swap and play', original:'Spielfeld — Tauschbörse & Spieletreff', place:'pablo', category:'Games', dates:['2026-10-17'], start:'15:30', end:'17:30', duration:120, recurring:false,
@@ -57,7 +57,7 @@ const records = [
 ];
 // Weekday describes the published schedule only; it never creates a session date.
 const recurringWeekdays = {'sprachraum-pablo':[2],'sprachraum-wilhelm':[4],'sprachraum-raumer':[1],'english-book-club':[1],'knitting-pablo':[2],'sewing-pablo':[6],'retro-gaming':[5],'smartphone-cafe':[1]};
-export const activities = records.map(item => ({...item, ...venues[item.place], checkedOn, weekdays:recurringWeekdays[item.id] || [...new Set(item.dates.map(date=>new Date(date+'T12:00:00Z').getUTCDay()))]}));
+export const activities = records.map(item => ({...item, ...venues[item.place], checkedOn:item.checkedOn || checkedOn, weekdays:recurringWeekdays[item.id] || [...new Set(item.dates.map(date=>new Date(date+'T12:00:00Z').getUTCDay()))]}));
 export const byId = new Map(activities.map(item => [item.id, item]));
 export function berlinToday(now = new Date()) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {timeZone:berlinZone, year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(now).map(part=>[part.type,part.value]));

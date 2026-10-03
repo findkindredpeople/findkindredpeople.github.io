@@ -15,14 +15,16 @@ test('day and time filters require a full published session, without inventing d
   const book=byId.get('english-book-club');
   assert.equal(matchesFilters(book,{weekday:'1',language:'en'},'2026-09-21'),true);
   assert.equal(matchesFilters(book,{weekday:'1',language:'en',when:'7'},'2026-09-21'),false);
-  assert.equal(nextDate(book,'2026-09-21'),null);
+  assert.equal(nextDate(book,'2026-10-03'),'2026-10-12');
+  assert.equal(nextDate(byId.get('sprachraum-pablo'),'2026-10-03'),null);
 });
 test('first-visit questions distinguish published dates from missing dates and ask about English',()=>{
   const dated=firstVisitMessage(byId.get('crochet-tiergarten'),'en',true,'2026-09-21');
   assert.match(dated,/2026-09-22, 15:00–17:30/);
   assert.match(dated,/Can I take part using English/);
-  const unknown=firstVisitMessage(byId.get('english-book-club'),'en',false,'2026-09-21');
+  const unknown=firstVisitMessage(byId.get('sprachraum-pablo'),'en',false,'2026-10-03');
   assert.match(unknown,/confirm the next date/); assert.doesNotMatch(unknown,/2026-09-/);
+  assert.match(firstVisitMessage(byId.get('english-book-club'),'en',false,'2026-10-03'),/2026-10-12, 17:30–19:00/);
   assert.match(firstVisitMessage(byId.get('english-book-club'),'de',true,'2026-09-21'),/Kann ich auf Englisch teilnehmen/);
 });
 test('pilot requires explicit consent and expires exactly 30 days after it starts',()=>{
