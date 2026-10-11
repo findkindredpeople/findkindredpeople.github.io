@@ -11,7 +11,7 @@ const render=()=>{
   if(!postsLoaded)return;
   const place=$('#filterCity').value,category=$('#filterCategory').value;
   const posts=filterDiscussions(allPosts,{place,category});
-  $('#discussion-count').textContent=`${posts.length} ${posts.length===1?'discussion':'discussions'} shown`;
+  $('#discussion-count').textContent=`${posts.length} ${posts.length===1?'post':'posts'} shown`;
   document.querySelectorAll('[data-category]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===category)));
   $('#topics').innerHTML=posts.length?posts.map(x=>{const place=[x.city,x.country].filter(Boolean).join(', ');return `<article class="topic"><div class="meta">${safe(x.category)}${place?' · '+safe(place):''} · ${safe(x.authorName||'Kindred member')}${postDate(x)}</div><p>${safe(x.text)}</p><div class="actions"><button class="react" data-like="${safe(x.id)}" aria-pressed="${liked(x.id)}">${liked(x.id)?'♥':'♡'} Helpful</button><button class="report" data-report="${safe(x.id)}">Report</button></div></article>`}).join(''):$(place.trim()||category?'#forum-filter-empty':'#forum-empty').innerHTML;
   document.querySelectorAll('[data-like]').forEach(button=>button.onclick=()=>{try{const key='kindredLike:'+button.dataset.like,on=liked(button.dataset.like);on?localStorage.removeItem(key):localStorage.setItem(key,'1');button.textContent=on?'♡ Helpful':'♥ Helpful';button.setAttribute('aria-pressed',String(!on))}catch{alert('This browser could not save your helpful mark.')}});
@@ -21,4 +21,4 @@ $('#resetFilters').onclick=()=>{$('#filterCity').value='';$('#filterCategory').v
 document.querySelectorAll('[data-category]').forEach(button=>button.onclick=()=>{$('#filterCategory').value=button.dataset.category;render();$('#topics-heading').focus();$('#topics-heading').scrollIntoView({block:'start'})});
 onSnapshot(query(collection(db,'forumPosts'),where('status','==','visible'),limit(50)),snap=>{
   allPosts=snap.docs.map(doc=>({...doc.data(),id:doc.id})).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));postsLoaded=true;render();
-},()=>{$('#discussion-count').textContent='Discussions are unavailable right now.';$('#topics').innerHTML=$('#forum-load-error').innerHTML;$('#topics').querySelector('[data-retry]').onclick=()=>location.reload()});
+},()=>{$('#discussion-count').textContent='Posts are unavailable right now.';$('#topics').innerHTML=$('#forum-load-error').innerHTML;$('#topics').querySelector('[data-retry]').onclick=()=>location.reload()});
