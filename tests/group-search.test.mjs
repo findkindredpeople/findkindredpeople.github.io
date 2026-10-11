@@ -28,3 +28,23 @@ test('missing, long and multiline locations cannot imply a verified event or com
   assert.equal(localGroupSearch({place:'x'.repeat(200)}).place.length,80);
   assert.deepEqual(localGroupSearch({interest:'unrecognised'}).queries,localGroupSearch().queries);
 });
+
+test('activity-specific questions expose preparation, terrain and volunteering commitments', () => {
+  assert.match(localGroupSearch({interest:'books'}).message,/read a particular book beforehand/);
+  assert.match(localGroupSearch({interest:'crafts'}).message,/materials included in the full price/);
+  assert.match(localGroupSearch({interest:'walking'}).message,/route length, pace and terrain/);
+  assert.match(localGroupSearch({interest:'volunteering',language:'de'}).message,/Einarbeitung und Mindestverpflichtung/);
+  assert.match(localGroupSearch({interest:'language',language:'de'}).message,/gegenseitiges Tandem/);
+});
+
+test('directories route volunteers to agencies and keep arbitrary interest keys safe', () => {
+  const volunteers = localGroupSearch({interest:'volunteering'});
+  assert.equal(volunteers.directories[0].url,'https://bagfa.de/agenturatlas/');
+  for (const interest of [...groupInterests,'__proto__','constructor','toString']) {
+    const search = localGroupSearch({interest});
+    assert.equal(search.directories.length,2);
+    assert.ok(search.directories.every(d=>d.url.startsWith('https://') && d.next));
+    assert.ok(search.activityQuestion.length>30);
+  }
+  assert.deepEqual(localGroupSearch({interest:'__proto__'}),localGroupSearch());
+});

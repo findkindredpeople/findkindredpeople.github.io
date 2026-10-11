@@ -18,7 +18,7 @@
 <script src="cookie-consent.js?v=20260919-3" defer></script>
 <script type="application/ld+json" data-kindred-schema>{"@context":"https://schema.org","@graph":[{"@type":"Article","@id":"https://findkindredpeople.com/guide-find-recurring-groups.html#article","headline":"How to Find Recurring Groups in a New City","description":"One-off events create introductions. Recurring groups create familiarity and realistic opportunities to meet again. How to find them.","url":"https://findkindredpeople.com/guide-find-recurring-groups.html","image":"https://findkindredpeople.com/community-cafe-kindred.png","datePublished":"2026-09-01","dateModified":"2026-10-11","inLanguage":"en","author":{"@type":"Organization","name":"Kindred","url":"https://findkindredpeople.com/about.html","logo":{"@type":"ImageObject","url":"https://findkindredpeople.com/kindred-logo.png"}},"publisher":{"@type":"Organization","name":"Kindred","url":"https://findkindredpeople.com/","logo":{"@type":"ImageObject","url":"https://findkindredpeople.com/kindred-logo.png"}}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://findkindredpeople.com/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://findkindredpeople.com/guides.html"},{"@type":"ListItem","position":3,"name":"How to Find Recurring Groups in a New City","item":"https://findkindredpeople.com/guide-find-recurring-groups.html"}]}]}</script>
 <script src="reading-time.js" defer></script>
-<script type="module" src="group-search.js?v=20261011-1"></script>
+<script type="module" src="group-search.js?v=20261011-2"></script>
 </head>
 <body>
 <header>
@@ -58,15 +58,15 @@
 <tr><td><a href="https://bagfa.de/agenturatlas/" target="_blank" rel="noopener noreferrer">bagfa volunteer-agency atlas</a></td><td>Find a volunteer agency by place or federal state.</td><td>Ask about a manageable recurring task, induction, time commitment and any expenses. Volunteer work involves responsibilities as well as opportunities to meet people.</td></tr>
 </tbody></table></div>
 <p class="meta">Directory pages reviewed <time datetime="2026-10-11">11 October 2026</time>. These organisations operate their own services. Follow their directory links to contact the local organiser.</p>
-<h3>Create search phrases for your town</h3>
-<p>Choose an interest and copy three German search phrases into your preferred search engine. The question draft helps you ask about missing details. For other countries, adapt the English search patterns above and use local directories.</p>
+<h3>Find relevant directories and questions for your town</h3>
+<p>Choose an interest to get two relevant directory links, three German search phrases and questions specific to that activity. Open the provider’s own current programme before choosing a visit. For other countries, adapt the English search patterns above and use local directories.</p>
 <form id="local-group-form" class="local-group-form" hidden>
 <div><label for="group-place">Town or neighbourhood</label><input id="group-place" name="place" maxlength="80" placeholder="For example: Köln Ehrenfeld" autocomplete="off"></div>
 <div><label for="group-interest">An activity I would enjoy</label><select id="group-interest" name="interest"><option value="language">Language practice</option><option value="books">Books and reading</option><option value="crafts">Crafts and making things</option><option value="walking">Walking with a group</option><option value="volunteering">Volunteering</option></select></div>
 <div><label for="group-language">Question draft language</label><select id="group-language" name="language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
 <button type="submit" class="button">Create my search phrases</button>
 </form>
-<div id="local-group-result" class="local-group-result" hidden><h3>Your search phrases</h3><ul id="local-group-queries"></ul><label for="local-group-message">Questions for the organiser</label><textarea id="local-group-message" rows="7"></textarea><button id="copy-group-draft" class="secondary-button" type="button">Copy phrases and questions</button><p>Use a contact method on the organiser's page. These phrases help you find listings; dates and places still need checking.</p></div>
+<div id="local-group-result" class="local-group-result" hidden><h3>Start with these directories</h3><p>Reviewed 11 October 2026. Search inside the directory for your town, then check the local programme. These are provider directories, not verified event results for your location.</p><ul id="local-group-directories" class="local-group-directories"></ul><h3>Your search phrases</h3><ul id="local-group-queries"></ul><label for="local-group-message">Questions for the organiser</label><textarea id="local-group-message" rows="7"></textarea><button id="copy-group-draft" class="secondary-button" type="button">Copy directories, phrases and questions</button><p>Use a contact method on the organiser's page. These phrases help you find listings; dates and places still need checking.</p></div>
 <p id="local-group-status" role="status" aria-live="polite"></p>
 <noscript><p>Replace <code>[Stadt]</code> with your town in <code>[Stadt] Bibliothek Lesekreis</code>, <code>[Stadt] Sprachcafé regelmäßig</code> or <code>[Stadt] Freiwilligenagentur</code>. Use the organiser question template below.</p></noscript>
 
