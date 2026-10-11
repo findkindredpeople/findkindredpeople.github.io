@@ -1,0 +1,52 @@
+name: Refresh published Berlin date windows
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'berlin-activities-data.mjs'
+      - 'berlin-activities-de.mjs'
+      - 'berlin-discovery.mjs'
+      - 'scripts/build-berlin-page.mjs'
+      - 'scripts/build-berlin-discovery.mjs'
+      - 'scripts/build-german-practice.mjs'
+      - 'scripts/build-time.mjs'
+      - 'scripts/refresh-berlin-pages.mjs'
+      - '.github/workflows/refresh-berlin-pages.yml'
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: kindred-berlin-date-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check date, calendar and planning logic
+        run: node --test tests/*.test.mjs
+      - name: Refresh visible listings from published dates
+        run: node scripts/refresh-berlin-pages.mjs
+      - name: Commit changes and request the existing Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add berlin-activities.html berlin-aktivitaeten.html berlin-this-week.html berlin-diese-woche.html deutsch-ueben-berlin.html sitemap.xml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh Berlin date windows from published sessions"
+          git push origin HEAD:main
+          # Token pushes do not start Pages builds automatically.
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" --jq .status

@@ -1,5 +1,5 @@
 import {evaluateActivity} from './activity-fit.mjs?v=20261004-1';
-import {byId,selectedIds,toComparison} from './berlin-activities-data.mjs';
+import {byId,selectedIds,toComparison} from './berlin-activities-data.mjs?v=20261011-1';
 
 import {toolText,comparisonData} from './german-tools.mjs?v=20261004-1';
 const language=document.documentElement.lang==='de'?'de':'en',de=language==='de',t=text=>toolText(text,language);

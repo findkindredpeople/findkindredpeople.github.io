@@ -2,6 +2,12 @@
 
 The first 15 programme cards were checked against linked official Berlin library pages on 20 September 2026. The collection is deliberately limited to four areas and is not a live booking feed. Kindred first-visit suggestions are editorial advice, not participant reviews.
 
+## Review on 11 October 2026
+
+All 13 linked official pages were read again. Published dates, session times, joining requirements and stated costs still support the current records. Historical September dates are retained as archive data; the English and German current lists now hide past one-off events before JavaScript runs. Four explicit sessions fall in 11–17 October: English book club (12 October), singing and crochet (13 October), and board-game swap (17 October). The three SprachRaum locations still publish weekly rhythms rather than individual session dates.
+
+The daily `refresh-berlin-pages.yml` workflow rebuilds the date windows from existing published dates and requests the existing GitHub Pages build after a bot commit. It never changes `checkedOn` or approves new source facts. The separate weekly source monitor remains read-only. `KINDRED_BUILD_AT` provides a deterministic clock for snapshot regression checks.
+
 Edit `berlin-activities-data.mjs`, then run `node scripts/build-berlin-page.mjs` to regenerate the static, indexable page. Keep both data and generated HTML in the same commit. Run `node --test tests/*.test.mjs` after changing dates, filters or calendar logic.
 
 Before advancing `checkedOn`, read every listed source again. Copy only explicit future session dates into `dates`; never infer a date from “every Tuesday”. If an overview and detail page disagree, exclude the date until resolved. The Klima GameNight listing was excluded because the overview and detail page showed conflicting dates/years.

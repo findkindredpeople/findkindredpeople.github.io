@@ -1,4 +1,4 @@
-import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs';
+import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs?v=20261011-1';
 import {downloadCalendar} from './calendar.mjs';
 import {storageKey as englishStorageKey,invitationFields,calendarFields,validSavedPlan} from './planner-storage.mjs';
 import {toolText,germanPlan} from './german-tools.mjs?v=20261004-1';

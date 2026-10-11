@@ -1,4 +1,4 @@
-import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261003-2';
+import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261011-1';
 import {localizeActivity} from './berlin-activities-de.mjs?v=20261003-1';
 import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount,practiceCardMarkup} from './berlin-discovery.mjs?v=20261004-1';
 import {downloadCalendar} from './calendar.mjs?v=20261003-1';

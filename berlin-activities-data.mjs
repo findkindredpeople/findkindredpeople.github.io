@@ -1,5 +1,5 @@
 // Source pages were read on this date. Never advance it without checking them again.
-export const checkedOn = '2026-10-03';
+export const checkedOn = '2026-10-11';
 export const berlinZone = 'Europe/Berlin';
 const root = 'https://www.berlin.de/stadtbibliothek-friedrichshain-kreuzberg/';
 const pablo = root + 'bibliotheken/bezirkszentralbibliothek-pablo-neruda/veranstaltungen-projekte/';
@@ -45,10 +45,10 @@ const records = [
   {id:'smartphone-cafe', title:'Smartphone café', original:'Smartphone Café', place:'wilhelm', category:'Everyday skills', dates:[], start:'11:00', end:'12:00', duration:60, recurring:true,
     schedule:'Mondays, 11:00–12:00', fee:0, cost:'Free entry.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Bring your smartphone; ground-floor café.',
     description:'Work through everyday phone questions with others in an informal café setting.', tip:'Bring one question to discuss. Keep passwords, financial details and private messages off the shared screen.', source:wilhelm + 'smartphone-cafe-gemeinsam-loesen-wir-ihre-handy-probleme-1658266.php'},
-  {id:'clothing-swap', title:'Adult clothing swap', checkedOn:'2026-09-20', original:'Kleidertauschparty', place:'wilhelm', category:'Swaps', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
+  {id:'clothing-swap', title:'Adult clothing swap', original:'Kleidertauschparty', place:'wilhelm', category:'Swaps', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
     schedule:'26 September 2026, 11:00–14:00', fee:0, cost:'Free entry.', language:'unknown', languageText:'Session language not stated.', booking:'No registration. Up to 10 clean, undamaged adult garments. No shoes, accessories, underwear, socks, bedding or children’s clothes.',
     description:'Exchange adult clothing at the library. Check the accepted items before packing a bag.', tip:'Use a question about an item as a small conversation starter, without commenting on anyone’s body.', source:wilhelm + 'kleidertauschparty-1425205.php'},
-  {id:'language-trail', title:'Try a language: Europa spricht!', checkedOn:'2026-09-20', original:'Europa spricht! Sprachen-Parcours', place:'pablo', category:'Languages', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
+  {id:'language-trail', title:'Try a language: Europa spricht!', original:'Europa spricht! Sprachen-Parcours', place:'pablo', category:'Languages', dates:['2026-09-26'], start:'11:00', end:'14:00', duration:180, recurring:false,
     schedule:'26 September 2026, 11:00–14:00', fee:0, cost:'Free entry.', language:'multi', languageText:'Language tasters; ask about the instruction language.', booking:'No registration or previous language knowledge required.',
     description:'Try activities in languages including Greek, French, Polish, Italian, Spanish, Turkish, Chinese and Japanese with the district adult-education programme.', tip:'Pick one language station and ask another visitor which word they have just learned.', source:pablo + 'europa-spricht-sprachen-parcours-zum-europaeischen-tag-der-sprachen-1604533.php'},
   {id:'board-game-swap', title:'Board-game swap and play', original:'Spielfeld — Tauschbörse & Spieletreff', place:'pablo', category:'Games', dates:['2026-10-17'], start:'15:30', end:'17:30', duration:120, recurring:false,
