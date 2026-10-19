@@ -57,11 +57,11 @@ class Sources(unittest.TestCase):
             root = Path(directory)
             manifest, state, report = (root / name for name in ('manifest.json', 'state.json', 'report.json'))
             manifest.write_text(json.dumps([{'url': URL, 'ids': ['crochet']}, {'url': OTHER_URL, 'ids': ['singing']}]))
-            with patch.object(monitor, 'urlopen', side_effect=[http_error(429, '7'), response(), response(OTHER_URL)]) as fetch, \
+            with patch.object(monitor, 'urlopen', side_effect=[http_error(429, '45'), response(), response(OTHER_URL)]) as fetch, \
                     patch.object(monitor.time, 'sleep') as sleep:
                 self.assertEqual(monitor.run(manifest, state, report), 0)
             self.assertEqual(fetch.call_count, 3)
-            self.assertEqual(sleep.call_args_list, [call(7), call(2)])
+            self.assertEqual(sleep.call_args_list, [call(45), call(5)])
             rows = json.loads(report.read_text())['sources']
             self.assertEqual([row['status'] for row in rows], ['baseline', 'baseline'])
             self.assertEqual(rows[0]['dateCandidates'], ['2099-10-13'])
@@ -69,10 +69,10 @@ class Sources(unittest.TestCase):
 
     def test_retry_after_dates_and_long_or_invalid_headers(self):
         now = datetime(2026, 10, 19, 10, 0, tzinfo=timezone.utc)
-        self.assertEqual(monitor.retry_delay('Mon, 19 Oct 2026 10:00:12 GMT', 0, now), 12)
-        self.assertEqual(monitor.retry_delay('Mon, 19 Oct 2026 09:00:00 GMT', 1, now), 10)
+        self.assertEqual(monitor.retry_delay('Mon, 19 Oct 2026 10:00:45 GMT', 0, now), 45)
+        self.assertEqual(monitor.retry_delay('Mon, 19 Oct 2026 09:00:00 GMT', 1, now), 60)
         for value in (None, '', 'not a date', '-10'):
-            self.assertEqual(monitor.retry_delay(value, 0, now), 5)
+            self.assertEqual(monitor.retry_delay(value, 0, now), 30)
         self.assertIsNone(monitor.retry_delay('120', 0, now))
         self.assertIsNone(monitor.retry_delay('Mon, 19 Oct 2026 11:00:00 GMT', 0, now))
 
@@ -87,7 +87,7 @@ class Sources(unittest.TestCase):
                     patch.object(monitor.time, 'sleep') as sleep:
                 self.assertEqual(monitor.run(manifest, state, report), 1)
             self.assertEqual(fetch.call_count, 3)
-            self.assertEqual(sleep.call_args_list, [call(5), call(10)])
+            self.assertEqual(sleep.call_args_list, [call(30), call(60)])
             self.assertEqual(json.loads(state.read_text()), prior)
             row = json.loads(report.read_text())['sources'][0]
             self.assertEqual(row['status'], 'unavailable')
@@ -107,7 +107,7 @@ class Sources(unittest.TestCase):
         with patch.object(monitor, 'urlopen', side_effect=[http_error(503), response()]), \
                 patch.object(monitor.time, 'sleep') as sleep:
             self.assertIn('Library event', monitor.fetch_article(URL))
-            sleep.assert_called_once_with(5)
+            sleep.assert_called_once_with(30)
 
     def test_time_budget_prevents_more_requests_and_excessive_waits(self):
         with patch.object(monitor.time, 'monotonic', return_value=100), \

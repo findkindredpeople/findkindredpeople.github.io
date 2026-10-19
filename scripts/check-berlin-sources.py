@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_FETCH_ATTEMPTS = 3
 MAX_RETRY_DELAY_SECONDS = 60
-REQUEST_INTERVAL_SECONDS = 2
+REQUEST_INTERVAL_SECONDS = 5
 MAX_CHECK_SECONDS = 8 * 60
 
 
@@ -85,7 +85,7 @@ def allowed(url):
 
 def retry_delay(retry_after, attempt, now=None):
     """Respect both Retry-After formats, leaving long waits for a later run."""
-    delay = 5 * (2 ** attempt)
+    delay = 30 * (2 ** attempt)
     if retry_after:
         value = retry_after.strip()
         try:
