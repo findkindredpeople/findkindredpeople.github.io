@@ -46,7 +46,7 @@ const translations = {
     schedule:'Erster Dienstag im Monat; ab November auch dritter Dienstag, 15:30–17:30 Uhr',
     cost:'Eintritt frei; eigenes Projekt mitbringen. Materialkosten nicht angegeben.',
     languageText:'Sprache der Veranstaltung nicht angegeben.',
-    booking:'Keine Anmeldung. Anfänger und Fortgeschrittene willkommen. Am ersten Dienstag unterstützt das Bibliotheksteam; am dritten Dienstag ab November trifft sich eine selbstständige offene Gruppe.',
+    booking:'Keine Anmeldung. Anfänger und Fortgeschrittene willkommen. Die Terminliste nennt den 17. November, 15. Dezember und 19. Januar als offene Runde ohne Betreuung. Unterstützung für den gewählten Termin bitte bestätigen lassen.',
     tip:'Nimm ein kleines, gut transportierbares Projekt mit und frage, ob dir jemand eine Technik zeigen kann.'
   },
   'sewing-pablo': {

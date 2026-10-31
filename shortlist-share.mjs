@@ -1,4 +1,4 @@
-import {selectedIds} from './berlin-activities-data.mjs';
+import {selectedIds} from './berlin-activities-data.mjs?v=20261031-1';
 import qrcode from './vendor/qrcode-generator/qrcode.mjs';
 export function shortlistURL(ids,language='de') {
  const clean=selectedIds(Array.from(ids).join(','));

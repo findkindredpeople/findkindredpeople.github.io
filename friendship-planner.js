@@ -1,8 +1,8 @@
-import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs?v=20261011-1';
+import {byId,selectedIds,nextDate} from './berlin-activities-data.mjs?v=20261031-1';
 import {downloadCalendar} from './calendar.mjs';
 import {storageKey as englishStorageKey,invitationFields,calendarFields,validSavedPlan} from './planner-storage.mjs';
 import {toolText,germanPlan} from './german-tools.mjs?v=20261004-1';
-import {localizeActivity} from './berlin-activities-de.mjs';
+import {localizeActivity} from './berlin-activities-de.mjs?v=20261031-1';
 (() => {
   'use strict';
   const form = document.getElementById('planner-form');

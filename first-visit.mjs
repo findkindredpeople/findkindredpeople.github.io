@@ -1,4 +1,4 @@
-import {nextDate} from './berlin-activities-data.mjs?v=20260921-1';
+import {nextDate} from './berlin-activities-data.mjs?v=20261031-1';
 export function firstVisitMessage(item, language = 'en', needsEnglish = false, today) {
   const date = nextDate(item,today);
   if (language === 'de') return `Guten Tag, ich interessiere mich für „${item.original}“ in der ${item.venue}. Ich würde zum ersten Mal und allein kommen.\n\n${date ? `Auf Ihrer Seite steht der ${date} von ${item.start} bis ${item.end} Uhr. Findet dieser Termin statt und sind noch Plätze frei?` : 'Könnten Sie mir bitte das Datum, die Anfangszeit und die Endzeit des nächsten Termins bestätigen?'}\n\nMuss ich mich anmelden? Was kostet der erste Besuch insgesamt, einschließlich Material? Was sollte ich mitbringen?\n\n${needsEnglish ? 'Kann ich auf Englisch teilnehmen? Mein Deutsch reicht möglicherweise noch nicht aus.' : 'In welchen Sprachen findet das Angebot statt und welche Sprachkenntnisse brauche ich?'}\n\nWo melde ich mich bei der Ankunft? Falls ich Fragen zur Zugänglichkeit habe, an wen kann ich mich wenden? Vielen Dank!`;

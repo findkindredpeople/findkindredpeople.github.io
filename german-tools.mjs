@@ -1,6 +1,6 @@
 // German wording for the public worksheets. No translation service or personal-data transfer.
-import {localizeActivity} from './berlin-activities-de.mjs';
-import {toComparison,nextDate} from './berlin-activities-data.mjs';
+import {localizeActivity} from './berlin-activities-de.mjs?v=20261031-1';
+import {toComparison,nextDate} from './berlin-activities-data.mjs?v=20261031-1';
 const messages = {
  'Your plan is ready. Check off steps as you go, or keep a copy.':'Dein Plan ist bereit. Hake Schritte ab oder bewahre eine Kopie auf.',
  'Invitation updated. Your checklist is unchanged.':'Nachricht aktualisiert. Deine Häkchen bleiben erhalten.',

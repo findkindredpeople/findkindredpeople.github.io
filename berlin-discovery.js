@@ -1,6 +1,6 @@
-import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261011-1';
-import {localizeActivity} from './berlin-activities-de.mjs?v=20261003-1';
-import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount,practiceCardMarkup} from './berlin-discovery.mjs?v=20261004-1';
+import {activities,byId,checkedOn,berlinToday,nextDate,selectedIds} from './berlin-activities-data.mjs?v=20261031-1';
+import {localizeActivity} from './berlin-activities-de.mjs?v=20261031-1';
+import {words,formatDate,addDays,futureSessions,discoveryMatch,currentProgrammes,cardMarkup,resultCount,practiceCardMarkup} from './berlin-discovery.mjs?v=20261031-1';
 import {downloadCalendar} from './calendar.mjs?v=20261003-1';
 import {shortlistURL,shortlistSVG} from './shortlist-share.mjs?v=20261004-1';
 const $=id=>document.getElementById(id),language=document.documentElement.lang==='de'?'de':'en',t=words[language],week=document.body.dataset.view==='week';

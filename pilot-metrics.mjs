@@ -1,4 +1,4 @@
-import {byId,berlinToday} from './berlin-activities-data.mjs?v=20260921-1';
+import {byId,berlinToday} from './berlin-activities-data.mjs?v=20261031-1';
 export const pilotKey = 'kindred-berlin-pilot-v1';
 export const pilotDays = 30;
 const events = ['choose','organiser','compare','plan','calendar'];

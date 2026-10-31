@@ -1,4 +1,4 @@
-import {activities,byId,checkedOn,berlinToday,nextDate,isExpired,selectedIds,matchesFilters} from './berlin-activities-data.mjs?v=20261011-1';
+import {activities,byId,checkedOn,berlinToday,nextDate,isExpired,selectedIds,matchesFilters} from './berlin-activities-data.mjs?v=20261031-1';
 import {firstVisitMessage} from './first-visit.mjs?v=20260921-1';
 import {trackPilot} from './pilot-metrics.mjs?v=20260921-1';
 import {refreshPilot} from './berlin-pilot.js?v=20260921-1';

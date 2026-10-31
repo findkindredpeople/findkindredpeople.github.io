@@ -1,0 +1,36 @@
+/* Shared public navigation. App screens keep their own navigation. */
+.site-skip-link{position:fixed;top:10px;left:16px;z-index:1000;transform:translateY(-180%);padding:10px 16px;background:#fff;color:#463082;border:2px solid #6842f4;border-radius:12px;font:700 15px/1.5 system-ui,sans-serif}
+.site-skip-link:focus{transform:translateY(0)}
+.site-header{position:sticky;top:0;z-index:40;margin:0;padding:0;border:0;border-bottom:1px solid #e6def3;background:rgba(255,255,255,.97);color:#30275d;box-shadow:0 4px 24px #4a347610;backdrop-filter:blur(16px);font:600 15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.site-header-inner{box-sizing:border-box;display:flex;align-items:center;gap:20px;max-width:1180px;min-height:78px;margin:0 auto;padding:12px 24px}
+.site-brand{display:inline-flex;flex:0 0 auto;align-items:center;gap:10px;min-height:44px;margin:0 auto 0 0;color:#342764!important;text-decoration:none;font:800 25px/1.1 system-ui,sans-serif;letter-spacing:-.8px;white-space:nowrap}
+.site-brand img{display:block;flex:0 0 40px;width:40px;height:40px;margin:0;border:0;border-radius:12px;box-shadow:none}
+.site-navigation{display:flex;flex:0 1 auto;align-items:center;justify-content:flex-end;gap:3px;min-width:0;margin:0;padding:0}
+.site-header .site-nav-link,.site-header .site-language,.site-tools>summary{box-sizing:border-box;display:flex;align-items:center;min-height:44px;padding:10px 12px;border:0;border-radius:12px;color:#4b4562!important;background:transparent;text-decoration:none;font:650 15px/1.5 system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.site-header .site-nav-link:hover,.site-tools>summary:hover,.site-header .site-language:hover{background:#f0eaff;color:#5730d8!important}
+.site-header .site-nav-link.is-active,.site-header .site-nav-link[aria-current="page"],.site-tools.is-active>summary{color:#5631cf!important;background:#eee7ff}
+.site-header .site-language{border:1px solid #ded5ef;margin-left:6px;font-size:14px}
+.site-tools{position:relative;margin:0;padding:0;border:0}
+.site-tools>summary{gap:7px;list-style:none}
+.site-tools>summary::-webkit-details-marker{display:none}
+.site-tools>summary::after{content:"";width:6px;height:6px;margin:0 2px 3px;transform:rotate(45deg);border:solid currentColor;border-width:0 1.8px 1.8px 0}
+.site-tools[open]>summary::after{transform:rotate(225deg);margin-top:5px}
+.site-tools-panel{position:absolute;top:calc(100% + 9px);left:0;z-index:50;display:grid;gap:3px;width:242px;max-width:calc(100vw - 32px);padding:9px;background:#fff;border:1px solid #ded5ef;border-radius:18px;box-shadow:0 18px 44px #3b24662b}
+.site-tools-panel .site-nav-link{white-space:normal}
+.site-menu-toggle{display:none;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:0;padding:10px 13px;border:1px solid #ded5ef;border-radius:12px;background:#fff;color:#49337c;font:700 15px/1.4 system-ui,sans-serif;box-shadow:none;cursor:pointer}
+.site-menu-toggle:hover{background:#f4eeff}
+.site-menu-toggle svg{flex:0 0 20px}
+.site-header a:focus-visible,.site-header button:focus-visible,.site-tools>summary:focus-visible{outline:3px solid #8662ed;outline-offset:3px}
+main{min-width:0}
+@media(max-width:960px){
+ .site-header-inner{flex-wrap:wrap;gap:8px 14px;min-height:68px;padding:10px 16px}
+ .site-brand{font-size:23px}
+ .site-header[data-enhanced] .site-menu-toggle{display:inline-flex}
+ .site-navigation{display:flex;flex:1 1 100%;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;width:100%;padding:8px 0 4px;max-height:calc(100dvh - 90px);overflow-y:auto;overscroll-behavior:contain}
+ .site-header[data-enhanced][data-menu-open="false"] .site-navigation{display:none}
+ .site-header .site-nav-link,.site-header .site-language,.site-tools>summary{min-height:46px;padding:11px 13px;white-space:normal}
+ .site-tools-panel{position:static;box-sizing:border-box;width:100%;max-width:none;margin:4px 0 8px;padding:7px;background:#f8f5ff;box-shadow:none}
+ .site-header .site-language{align-self:flex-start;margin:6px 0 0;min-width:106px;justify-content:center}
+}
+@media(max-width:420px){.site-header-inner{padding-inline:12px}.site-brand{gap:8px;font-size:22px}.site-brand img{width:36px;height:36px;flex-basis:36px}.site-header .site-menu-toggle{padding:10px 11px}}
+@media(prefers-reduced-motion:reduce){.site-header *{scroll-behavior:auto;transition:none}}
