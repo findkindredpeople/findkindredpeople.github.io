@@ -1,6 +1,12 @@
 const PUSH_URL = 'https://kindred-push.nadiiahonda34.workers.dev/';
 const transient = status => status === 400 || status === 401 || status === 408 || status === 429 || status >= 500;
-let activeUser = null, retryTimer, opening;
+let activeUser = null, retryTimer, opening, authObserved = false;
+
+export function setKindredPushUser(user) {
+  authObserved = true;
+  activeUser = user;
+  clearTimeout(retryTimer);
+}
 const running = new Map(), fallback = new Map();
 
 function database() {
@@ -52,7 +58,8 @@ function scheduleRetry(user) {
 }
 
 export async function flushKindredPushOutbox(user, options = {}) {
-  activeUser = user;
+  if (authObserved && user?.uid !== activeUser?.uid) return;
+  if (!authObserved) activeUser = user;
   if (!user?.uid) {clearTimeout(retryTimer);return;}
   if (running.has(user.uid)) return running.get(user.uid);
   const store = options.store || pushOutbox, fetchImpl = options.fetchImpl || globalThis.fetch;

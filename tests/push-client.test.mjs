@@ -50,3 +50,15 @@ test('a new request using the same reference survives acknowledgement of an earl
   complete(new Response('{"ok":true,"queued":true}',{status:202}));await first;await second;
   assert.equal(s.items.size,1);await flushKindredPushOutbox(s.user,s);assert.equal(s.items.size,0);
 });
+
+test('a late send callback cannot resume the previous account outbox after sign-out',async()=>{
+  const client=await import('../push-client.mjs?auth-transition');
+  const s=setup();client.setKindredPushUser(s.user);
+  client.setKindredPushUser(null);
+  const result=await client.sendKindredPush(s.user,{type:'chat_message',connectionId:'pair',messageId:'late'},s);
+  assert.equal(result.accepted,false);assert.equal(s.requests.length,0);assert.equal(s.items.size,1);
+  client.setKindredPushUser({...s.user,uid:'other-user'});
+  await client.flushKindredPushOutbox(s.user,s);assert.equal(s.requests.length,0);
+  client.setKindredPushUser(s.user);await client.flushKindredPushOutbox(s.user,s);
+  assert.equal(s.requests.length,1);assert.equal(s.items.size,0);
+});
