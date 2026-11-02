@@ -1,4 +1,4 @@
-import {sendKindredPush,flushKindredPushOutbox} from "./push-client.mjs?v=20261102-1";
+import {sendKindredPush,flushKindredPushOutbox} from "./push-client.mjs?v=20261102-2";
 import {matchesProfileCity} from "./profile-search.mjs?v=20261011-1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";

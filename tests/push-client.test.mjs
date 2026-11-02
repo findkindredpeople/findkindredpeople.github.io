@@ -38,3 +38,15 @@ test('drains every event without imposing a recipient or outbox count cutoff',as
   const s=setup();for(let n=0;n<350;n++)await s.store.put({id:String(n),uid:s.user.uid,payload:{type:'chat_message',connectionId:'pair',messageId:String(n)}});
   await flushKindredPushOutbox(s.user,s);assert.equal(s.requests.length,350);assert.equal(s.items.size,0);
 });
+test('a new request using the same reference survives acknowledgement of an earlier request',async()=>{
+  const s=setup();let complete,started;
+  const ready=new Promise(resolve=>{started=resolve;});
+  const response=new Promise(resolve=>{complete=resolve;});
+  const options={...s,fetchImpl:async()=>{started();return response;}};
+  const payload={type:'friend_request',connectionId:'pair'};
+  const first=sendKindredPush(s.user,payload,options);await ready;
+  const second=sendKindredPush(s.user,payload,options);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(s.items.size,2);
+  complete(new Response('{"ok":true,"queued":true}',{status:202}));await first;await second;
+  assert.equal(s.items.size,1);await flushKindredPushOutbox(s.user,s);assert.equal(s.items.size,0);
+});
