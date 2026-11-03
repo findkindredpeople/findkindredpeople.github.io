@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>You're invited to Kindred</title>
+  <meta name="description" content="Join Kindred, find people with shared interests, and build friendship at your own pace.">
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#6847f5">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="You're invited to Kindred">
+  <meta property="og:description" content="New city. Shared interests. Your kind of people. Join me on Kindred.">
+  <meta property="og:image" content="https://findkindredpeople.com/community-cafe-kindred.webp">
+  <meta property="og:url" content="https://findkindredpeople.com/invite.html">
+  <link rel="canonical" href="https://findkindredpeople.com/invite.html">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="invite.css?v=20261103-1">
+  <script type="module" src="invite.mjs?v=20261103-1"></script>
+</head>
+<body>
+  <header>
+    <a class="brand" href="index.html"><img src="kindred-icon.svg" width="38" height="38" alt=""><span>Kindred</span></a>
+    <label><span class="sr-only" id="languageLabel">Language</span><select id="inviteLanguage" aria-labelledby="languageLabel"><option value="en">English</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="uk">Українська</option><option value="ar">العربية</option><option value="es">Español</option><option value="fr">Français</option><option value="tr">Türkçe</option></select></label>
+  </header>
+  <main>
+    <section class="invitation" aria-labelledby="inviteHeading">
+      <div class="spark" aria-hidden="true">✦</div>
+      <p class="eyebrow" id="inviteEyebrow">A LITTLE INVITATION. A NEW CONNECTION.</p>
+      <h1 id="inviteHeading">Your kind of people<br>could be one hello away.</h1>
+      <p class="intro" id="inviteDescription">Join Kindred and meet adults who share your interests, your friendship style and your pace.</p>
+      <div class="invited-note" id="invitedNote" hidden>A friend has invited you to Kindred.</div>
+      <div class="actions">
+        <a class="button primary" id="joinKindred" href="app.html">Join on the website <span aria-hidden="true">↗</span></a>
+        <a class="button store" id="downloadKindred" href="https://play.google.com/store/apps/details?id=com.findkindredpeople.kindred" rel="noopener noreferrer">Get it on Google Play</a>
+        <a class="open-app" id="openKindred" hidden>Already installed? Open Kindred</a>
+      </div>
+      <p class="fine" id="adultNotice">For adults aged 18 and over. You choose who to connect with.</p>
+      <div class="steps" aria-label="Getting started">
+        <div><span aria-hidden="true">01</span><h2 id="stepOneTitle">Join</h2><p id="stepOneText">Create your own account.</p></div>
+        <div><span aria-hidden="true">02</span><h2 id="stepTwoTitle">Be yourself</h2><p id="stepTwoText">Share your interests and friendship style.</p></div>
+        <div><span aria-hidden="true">03</span><h2 id="stepThreeTitle">Say hello</h2><p id="stepThreeText">Find people who fit your rhythm.</p></div>
+      </div>
+      <noscript><p>Use the links above to join Kindred. Enable JavaScript to keep the invitation code when registering.</p></noscript>
+    </section>
+  </main>
+  <footer><span>Kindred · Find your people</span><nav aria-label="Information"><a href="privacy.html" id="privacyLink">Privacy</a><a href="safety.html" id="safetyLink">Safety</a><a href="contact.html" id="contactLink">Contact</a></nav></footer>
+</body>
+</html>
