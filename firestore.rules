@@ -744,17 +744,17 @@ service cloud.firestore {
           && n.seriesRound == (o.wins1 == 3 || o.wins2 == 3 ? 1 : o.seriesRound+1))
         : !n.diff(o).affectedKeys().hasAny(['wins1','wins2','seriesRound']);
     }
-    function checkersForwardCapture(board,c,me) {
+    function checkersDirectionalCapture(board,c,me,up) {
       let col = c % 8;
       let enemy = 3-me;
-      return me == 1
+      return up
         ? (c >= 16 && ((col >= 2 && board.get(string(c-9),0) == enemy && board.get(string(c-18),0) == 0)
           || (col <= 5 && board.get(string(c-7),0) == enemy && board.get(string(c-14),0) == 0)))
         : (c < 48 && ((col >= 2 && board.get(string(c+7),0) == enemy && board.get(string(c+14),0) == 0)
           || (col <= 5 && board.get(string(c+9),0) == enemy && board.get(string(c+18),0) == 0)));
     }
     function checkersCapture(board,kings,c,me) {
-      return checkersForwardCapture(board,c,me) || (c in kings && checkersForwardCapture(board,c,3-me));
+      return checkersDirectionalCapture(board,c,me,me == 1) || (c in kings && checkersDirectionalCapture(board,c,me,me == 2));
     }
     function checkersStep(board,kings,c,me) {
       return ((me == 1 || c in kings) && c >= 8

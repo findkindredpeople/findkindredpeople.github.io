@@ -2,7 +2,7 @@ import {before,after,beforeEach,test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,updateDoc,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
+import {doc,setDoc,getDoc,getDocs,collection,deleteDoc,updateDoc,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
 import {initialPosition,move as gameMove,wireGameType,baseGameType} from '../../arcade-logic.mjs';
 import {checkersMoves,checkersProofWrites} from '../../checkers-logic.mjs';
 import {seriesFields,roundScore,nextRound} from '../../arcade-series.mjs';
@@ -94,4 +94,33 @@ test('resigning concedes one series point; identities and the match format stay 
   await assertFails(save('alice',next,{wins1:0,wins2:1,seriesTarget:1}));
   await assertSucceeds(save('alice',next,roundScore(room,2)));
   await assertFails(updateDoc(ref('bob'),{wins2:3,updatedAt:serverTimestamp()}));
+});
+
+test('a quiet move cannot omit or replay the atomic legality proofs',async()=>{
+  const room=await seed(data()),next=gameMove('checkers',room.state,40*64+33);
+  await assertFails(updateDoc(ref('alice'),{state:next,updatedAt:serverTimestamp()}));
+  await assertSucceeds(save('alice',next));
+  const opponentMove=gameMove('checkers',next,17*64+24);
+  await assertFails(updateDoc(ref('bob'),{state:opponentMove,updatedAt:serverTimestamp()}));
+  await assertSucceeds(save('bob',opponentMove));
+});
+
+test('twelve kings and a full blocked board stay inside per-write and batch limits',async()=>{
+  let p=initialPosition('checkers');p.kings=[...p.tokens1];
+  await seed(data('checkers',{state:p}));await assertSucceeds(save('alice',gameMove('checkers',p,40*64+33)));
+  const board={};for(let i=0;i<48;i++)if((Math.floor(i/8)+i%8)%2===1)board[i]=i<24?2:1;
+  p=checkers(board,{kings:Object.keys(board).map(Number)});
+  await seed(data('checkers',{state:p}));const next=gameMove('checkers',p,40*64+49);assert.equal(next.winner,1);
+  await assertSucceeds(save('alice',next));
+});
+
+test('proof documents are private and are deleted before their parent room',async()=>{
+  const room=await seed(data());await assertSucceeds(save('alice',gameMove('checkers',room.state,40*64+33)));
+  const proof=uid=>doc(db(uid),'arcadeRooms','game','checkersProofs','m');
+  await assertFails(getDoc(proof('cara')));await assertSucceeds(getDoc(proof('bob')));
+  await assertFails(deleteDoc(proof('cara')));await assertSucceeds(deleteDoc(proof('bob')));
+  const client=db('bob'),batch=writeBatch(client),children=await getDocs(collection(client,'arcadeRooms','game','checkersProofs'));
+  children.docs.forEach(child=>batch.delete(child.ref));await assertSucceeds(batch.commit());
+  await assertSucceeds(deleteDoc(doc(client,'arcadeRooms','game')));
+  await assertFails(getDocs(collection(client,'arcadeRooms','game','checkersProofs')));
 });
