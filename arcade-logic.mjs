@@ -1,10 +1,15 @@
-export const gameTypes={tic_tac_toe:{rows:3,columns:3,name:'Tic-tac-toe'},connect_four:{rows:6,columns:7,name:'Connect Four'},memory:{rows:4,columns:4,name:'Memory'}};
-export function initialPosition(type,random=Math.random){
+import {initialCheckers,checkersMove} from './checkers-logic.mjs';
+export const gameTypes={tic_tac_toe:{rows:3,columns:3,name:'Tic-tac-toe'},connect_four:{rows:6,columns:7,name:'Connect Four'},memory:{rows:4,columns:4,name:'Memory'},checkers:{rows:8,columns:8,name:'Checkers 8×8'}};
+export function initialPosition(type,random=Math.random,starter=1){
+ if(!gameTypes[type]||![1,2].includes(starter))throw Error('Invalid game');
  const deck=type==='memory'?Array.from({length:16},(_,i)=>i%8):[];
  for(let i=deck.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
- return {board:{},tokens1:[],tokens2:[],deck,matched:[],firstCard:-1,secondCard:-1,score1:0,score2:0,turn:1,winner:0,lastMove:-1,moveCount:0};
+ const p={board:{},tokens1:[],tokens2:[],deck,matched:[],firstCard:-1,secondCard:-1,score1:0,score2:0,turn:starter,winner:0,lastMove:-1,moveCount:0};
+ if(type==='checkers'){Object.assign(p,initialCheckers());p.tokens1=Object.keys(p.board).filter(i=>p.board[i]===1).map(Number);p.tokens2=Object.keys(p.board).filter(i=>p.board[i]===2).map(Number);}
+ return p;
 }
 export function move(type,previous,selection){
+ if(type==='checkers')return checkersMove(previous,selection);
  const p=structuredClone(previous),g=gameTypes[type];if(!g||p.winner||![1,2].includes(p.turn)||!Number.isInteger(selection))throw Error('Invalid move');
  if(type==='memory'){
    if(p.firstCard>=0&&p.secondCard>=0||selection<0||selection>=16||p.matched.includes(selection)||selection===p.firstCard)throw Error('Invalid card');

@@ -706,8 +706,8 @@ service cloud.firestore {
     function arcadeRoom(id) { return get(/databases/$(database)/documents/arcadeRooms/$(id)).data; }
     function arcadeMember(id) { return signedIn() && request.auth.uid in arcadeRoom(id).participants; }
     function arcadeShape(d) {
-      return d.keys().hasOnly(['gameType','mode','status','player1Id','player1Name','player2Id','player2Name','participants','connectionId','state','rematchRequestedBy','round','createdAt','updatedAt','heartbeatAt'])
-        && d.gameType in ['tic_tac_toe','connect_four','memory'] && d.mode in ['random','invite']
+      return d.keys().hasOnly(['gameType','mode','status','player1Id','player1Name','player2Id','player2Name','participants','connectionId','state','rematchRequestedBy','round','createdAt','updatedAt','heartbeatAt','seriesTarget','wins1','wins2','seriesRound'])
+        && d.gameType in ['tic_tac_toe','connect_four','memory','checkers'] && d.mode in ['random','invite']
         && d.status in ['waiting','invited','playing','finished','cancelled','declined']
         && d.player1Id is string && d.player1Id.size() >= 1 && d.player1Id.size() <= 128
         && d.player2Id is string && d.player2Id.size() <= 128
@@ -715,20 +715,132 @@ service cloud.firestore {
         && d.player2Name is string && d.player2Name.size() <= 80
         && d.participants is list && d.participants.size() >= 1 && d.participants.size() <= 2
         && d.connectionId is string && d.connectionId.size() <= 256
-        && d.rematchRequestedBy is string && d.round is int && d.round >= 1
+        && d.rematchRequestedBy is string && d.round is int && d.round >= 1 && arcadeSeriesShape(d)
         && d.createdAt is timestamp && d.updatedAt is timestamp && d.heartbeatAt is timestamp
-        && d.state is map && d.state.keys().hasOnly(['board','tokens1','tokens2','deck','matched','firstCard','secondCard','score1','score2','turn','winner','lastMove','moveCount'])
+        && d.state is map && d.state.keys().hasOnly(['board','tokens1','tokens2','deck','matched','firstCard','secondCard','score1','score2','turn','winner','lastMove','moveCount'].concat(d.gameType == 'checkers' ? ['kings','forcedFrom','quietMoves','lastFrom','lastCaptured'] : []))
         && d.state.board is map && d.state.tokens1 is list && d.state.tokens2 is list && d.state.deck is list && d.state.matched is list
         && d.state.firstCard is int && d.state.secondCard is int
         && d.state.score1 is int && d.state.score2 is int
         && d.state.turn is int && d.state.turn in [1,2] && d.state.winner is int && d.state.winner in [0,1,2,3]
         && d.state.lastMove is int && d.state.moveCount is int;
     }
+    // Optional first-to-three series. Legacy single rounds keep their original shape.
+    function arcadeSeriesShape(d) {
+      return (d.get('seriesTarget',1) == 1 && !d.keys().hasAny(['seriesTarget','wins1','wins2','seriesRound']))
+        || (d.seriesTarget == 3 && d.wins1 is int && d.wins2 is int && d.seriesRound is int
+          && d.wins1 >= 0 && d.wins1 <= 3 && d.wins2 >= 0 && d.wins2 <= 3 && d.seriesRound >= 1);
+    }
+    function arcadeSeriesAward(o,n) {
+      return o.get('seriesTarget',1) == 3
+        ? (o.wins1 < 3 && o.wins2 < 3
+          && n.wins1 == o.wins1 + (n.state.winner == 1 ? 1 : 0)
+          && n.wins2 == o.wins2 + (n.state.winner == 2 ? 1 : 0))
+        : !n.diff(o).affectedKeys().hasAny(['wins1','wins2']);
+    }
+    function arcadeSeriesNext(o,n) {
+      return o.get('seriesTarget',1) == 3
+        ? (n.wins1 == (o.wins1 == 3 || o.wins2 == 3 ? 0 : o.wins1)
+          && n.wins2 == (o.wins1 == 3 || o.wins2 == 3 ? 0 : o.wins2)
+          && n.seriesRound == (o.wins1 == 3 || o.wins2 == 3 ? 1 : o.seriesRound+1))
+        : !n.diff(o).affectedKeys().hasAny(['wins1','wins2','seriesRound']);
+    }
+    function checkersCapture(board,kings,c,me) {
+      return ((me == 1 || c in kings) && c >= 16
+          && ((c % 8 >= 2 && board.get(string(c-9),0) == 3-me && board.get(string(c-18),0) == 0)
+            || (c % 8 <= 5 && board.get(string(c-7),0) == 3-me && board.get(string(c-14),0) == 0)))
+        || ((me == 2 || c in kings) && c < 48
+          && ((c % 8 >= 2 && board.get(string(c+7),0) == 3-me && board.get(string(c+14),0) == 0)
+            || (c % 8 <= 5 && board.get(string(c+9),0) == 3-me && board.get(string(c+18),0) == 0)));
+    }
+    function checkersStep(board,kings,c,me) {
+      return ((me == 1 || c in kings) && c >= 8
+          && ((c % 8 >= 1 && board.get(string(c-9),0) == 0) || (c % 8 <= 6 && board.get(string(c-7),0) == 0)))
+        || ((me == 2 || c in kings) && c < 56
+          && ((c % 8 >= 1 && board.get(string(c+7),0) == 0) || (c % 8 <= 6 && board.get(string(c+9),0) == 0)));
+    }
+    function checkersCanAct(board,kings,c,me,capturesOnly) {
+      return (!capturesOnly && checkersStep(board,kings,c,me)) || checkersCapture(board,kings,c,me);
+    }
+    function checkersAny(board,kings,tokens,me,capturesOnly) {
+      return (tokens.size() > 0 && checkersCanAct(board,kings,tokens[0],me,capturesOnly))
+        || (tokens.size() > 1 && checkersCanAct(board,kings,tokens[1],me,capturesOnly))
+        || (tokens.size() > 2 && checkersCanAct(board,kings,tokens[2],me,capturesOnly))
+        || (tokens.size() > 3 && checkersCanAct(board,kings,tokens[3],me,capturesOnly))
+        || (tokens.size() > 4 && checkersCanAct(board,kings,tokens[4],me,capturesOnly))
+        || (tokens.size() > 5 && checkersCanAct(board,kings,tokens[5],me,capturesOnly))
+        || (tokens.size() > 6 && checkersCanAct(board,kings,tokens[6],me,capturesOnly))
+        || (tokens.size() > 7 && checkersCanAct(board,kings,tokens[7],me,capturesOnly))
+        || (tokens.size() > 8 && checkersCanAct(board,kings,tokens[8],me,capturesOnly))
+        || (tokens.size() > 9 && checkersCanAct(board,kings,tokens[9],me,capturesOnly))
+        || (tokens.size() > 10 && checkersCanAct(board,kings,tokens[10],me,capturesOnly))
+        || (tokens.size() > 11 && checkersCanAct(board,kings,tokens[11],me,capturesOnly));
+    }
+    function checkersDiagonal(f,t,distance) {
+      return (int(t/8) == int(f/8)+distance || int(t/8) == int(f/8)-distance)
+        && (t%8 == f%8+distance || t%8 == f%8-distance);
+    }
+    function checkersGeometry(a,b) {
+      let f = b.lastFrom;
+      let t = b.lastMove;
+      let capture = b.lastCaptured >= 0;
+      return f is int && t is int && f >= 0 && f < 64 && t >= 0 && t < 64
+        && a.board.get(string(f),0) == a.turn && a.board.get(string(t),0) == 0
+        && (f in a.kings || (a.turn == 1 ? t < f : t > f))
+        && (capture ? (checkersDiagonal(f,t,2) && b.lastCaptured == int((f+t)/2)
+            && a.board.get(string(b.lastCaptured),0) == 3-a.turn) : checkersDiagonal(f,t,1))
+        && (a.forcedFrom >= 0 ? (capture && f == a.forcedFrom)
+          : (capture || !checkersAny(a.board,a.kings,a.turn == 1 ? a.tokens1 : a.tokens2,a.turn,true)));
+    }
+    function checkersBoardUpdate(a,b) {
+      let f = b.lastFrom;
+      let t = b.lastMove;
+      let cap = b.lastCaptured;
+      let own = a.turn == 1 ? a.tokens1 : a.tokens2;
+      let nextOwn = a.turn == 1 ? b.tokens1 : b.tokens2;
+      let other = a.turn == 1 ? a.tokens2 : a.tokens1;
+      let nextOther = a.turn == 1 ? b.tokens2 : b.tokens1;
+      return b.board.size() == a.board.size()-(cap >= 0 ? 1 : 0)
+        && b.board.diff(a.board).affectedKeys() == (cap >= 0 ? [string(f),string(t),string(cap)] : [string(f),string(t)]).toSet()
+        && !b.board.keys().hasAny([string(f)]) && b.board[string(t)] == a.turn
+        && (cap < 0 || !b.board.keys().hasAny([string(cap)]))
+        && nextOwn.size() == own.size() && nextOwn.toSet() == own.removeAll([f]).concat([t]).toSet()
+        && nextOther.size() == other.size()-(cap >= 0 ? 1 : 0) && nextOther.toSet() == other.removeAll([cap]).toSet();
+    }
+    function checkersPromotes(a,b) {
+      return !(b.lastFrom in a.kings) && (a.turn == 1 ? b.lastMove < 8 : b.lastMove >= 56);
+    }
+    function checkersMetadata(a,b) {
+      let crowned = b.lastFrom in a.kings || checkersPromotes(a,b);
+      return b.kings is list && b.forcedFrom is int && b.quietMoves is int && b.lastCaptured is int && b.lastCaptured >= -1
+        && b.kings.size() == b.kings.toSet().size()
+        && b.kings.toSet() == a.kings.removeAll([b.lastFrom,b.lastCaptured]).concat(crowned ? [b.lastMove] : []).toSet()
+        && b.quietMoves == (b.lastFrom in a.kings && b.lastCaptured == -1 ? a.quietMoves+1 : 0)
+        && b.moveCount == a.moveCount+1
+        && b.diff(a).affectedKeys().hasOnly(['board','tokens1','tokens2','kings','forcedFrom','quietMoves','lastFrom','lastCaptured','lastMove','moveCount','turn','winner']);
+    }
+    function checkersOutcome(o,n) {
+      let a = o.state;
+      let b = n.state;
+      let chain = b.lastCaptured >= 0 && !checkersPromotes(a,b) && checkersCapture(b.board,b.kings,b.lastMove,a.turn);
+      let otherCanPlay = chain || checkersAny(b.board,b.kings,a.turn == 1 ? b.tokens2 : b.tokens1,3-a.turn,false);
+      let winner = chain ? 0 : (!otherCanPlay ? a.turn : (b.quietMoves >= 80 ? 3 : 0));
+      return b.forcedFrom == (chain ? b.lastMove : -1) && b.winner == winner
+        && b.turn == (chain || winner != 0 ? a.turn : 3-a.turn)
+        && n.status == (winner == 0 ? 'playing' : 'finished');
+    }
+    function checkersMove(o,n) {
+      return checkersGeometry(o.state,n.state) && checkersBoardUpdate(o.state,n.state)
+        && checkersMetadata(o.state,n.state) && checkersOutcome(o,n);
+    }
+    function checkersInitial(s) {
+      return s.board == {'1': 2, '3': 2, '5': 2, '7': 2, '8': 2, '10': 2, '12': 2, '14': 2, '17': 2, '19': 2, '21': 2, '23': 2, '40': 1, '42': 1, '44': 1, '46': 1, '49': 1, '51': 1, '53': 1, '55': 1, '56': 1, '58': 1, '60': 1, '62': 1} && s.tokens1 == [40, 42, 44, 46, 49, 51, 53, 55, 56, 58, 60, 62] && s.tokens2 == [1, 3, 5, 7, 8, 10, 12, 14, 17, 19, 21, 23]
+        && s.kings == [] && s.forcedFrom == -1 && s.quietMoves == 0 && s.lastFrom == -1 && s.lastCaptured == -1;
+    }
     function arcadeInitial(d) {
-      return d.state.board == {} && d.state.tokens1 == [] && d.state.tokens2 == [] && d.state.matched == []
+      return (d.gameType == 'checkers' ? checkersInitial(d.state) : (d.state.board == {} && d.state.tokens1 == [] && d.state.tokens2 == [])) && d.state.matched == []
         && d.state.firstCard == -1 && d.state.secondCard == -1
         && d.state.score1 == 0 && d.state.score2 == 0
-        && d.state.turn == 1 && d.state.winner == 0 && d.state.lastMove == -1 && d.state.moveCount == 0
+        && d.state.turn == (d.get('seriesTarget',1) == 3 && d.round % 2 == 0 ? 2 : 1) && d.state.winner == 0 && d.state.lastMove == -1 && d.state.moveCount == 0
         && ((d.gameType != 'memory' && d.state.deck == [])
           || (d.gameType == 'memory' && d.state.deck.size() == 16
             && d.state.deck.hasOnly([0,1,2,3,4,5,6,7])
@@ -823,8 +935,8 @@ service cloud.firestore {
     function arcadeMove(o,n) {
       return o.status == 'playing' && o.state.winner == 0 && notBlocked(o)
         && request.auth.uid == (o.state.turn == 1 ? o.player1Id : o.player2Id)
-        && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt'])
-        && (o.gameType == 'memory' ? arcadeMemoryMove(o,n) : arcadeBoardMove(o,n));
+        && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt','wins1','wins2']) && arcadeSeriesAward(o,n)
+        && (o.gameType == 'memory' ? arcadeMemoryMove(o,n) : (o.gameType == 'checkers' ? checkersMove(o,n) : arcadeBoardMove(o,n)));
     }
     function arcadeOtherAction(o,n) {
       let me = request.auth.uid == o.player1Id ? 1 : 2;
@@ -834,17 +946,18 @@ service cloud.firestore {
           && (n.status == 'declined' || (n.status == 'playing' && notBlocked(o)))
           && n.diff(o).affectedKeys().hasOnly(['status','updatedAt']))
         || (o.status == 'playing' && n.status == 'finished' && n.state.winner is int && n.state.winner == 3-me
-          && n.state.diff(o.state).affectedKeys().hasOnly(['winner']) && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt']))
+          && n.state.diff(o.state).affectedKeys().hasOnly(['winner']) && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt','wins1','wins2']) && arcadeSeriesAward(o,n))
         || (o.status == 'finished' && n.status == 'finished' && n.rematchRequestedBy == request.auth.uid
           && o.rematchRequestedBy in ['',request.auth.uid] && n.diff(o).affectedKeys().hasOnly(['rematchRequestedBy','updatedAt']))
         || (o.status == 'finished' && o.rematchRequestedBy != '' && o.rematchRequestedBy != request.auth.uid && notBlocked(o)
           && n.status == 'playing' && n.rematchRequestedBy == '' && n.round == o.round+1 && arcadeShape(n) && arcadeInitial(n)
-          && n.diff(o).affectedKeys().hasOnly(['status','state','round','rematchRequestedBy','updatedAt']));
+          && arcadeSeriesNext(o,n) && n.diff(o).affectedKeys().hasOnly(['status','state','round','rematchRequestedBy','updatedAt','wins1','wins2','seriesRound']));
     }
     match /arcadeRooms/{id} {
       allow read: if signedIn() && (request.auth.uid in resource.data.participants || (resource.data.mode == 'random' && resource.data.status == 'waiting'));
       allow create: if signedIn() && arcadeShape(request.resource.data) && arcadeInitial(request.resource.data)
         && request.resource.data.player1Id == request.auth.uid && request.resource.data.round == 1 && request.resource.data.rematchRequestedBy == ''
+        && request.resource.data.get('wins1',0) == 0 && request.resource.data.get('wins2',0) == 0 && request.resource.data.get('seriesRound',1) == 1
         && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time && request.resource.data.heartbeatAt == request.time
         && ((request.resource.data.mode == 'random' && request.resource.data.status == 'waiting'
             && request.resource.data.player2Id == '' && request.resource.data.player2Name == '' && request.resource.data.connectionId == ''
