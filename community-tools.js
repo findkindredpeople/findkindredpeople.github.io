@@ -13,9 +13,9 @@ export function mountNotificationSettings(host,language='en') {
     stop();host.replaceChildren();if(!user)return;
     host.className='community-tools';
     host.innerHTML=`<details><summary>${safe(c.notification)}</summary><form>${['messages','friends','games','community'].map(key=>`<label><input type="checkbox" name="${key}" checked>${safe(c[key])}</label>`).join('')}<label><input type="checkbox" name="quietEnabled">${safe(c.quiet)}</label><label>${safe(c.from)}<input name="quietStart" type="time" required value="22:00"></label><label>${safe(c.until)}<input name="quietEnd" type="time" required value="08:00"></label><p class="tool-note" data-timezone></p><div class="tool-actions"><button type="submit" class="primary">${safe(c.save)}</button><button type="button" data-system>${safe(c.system)}</button><button type="button" data-test>${safe(c.test)}</button></div><p class="tool-status" role="status"></p></form></details>`;
-    const form=host.querySelector('form'),status=host.querySelector('[role=status]');
+    const form=host.querySelector('form'),status=host.querySelector('[role=status]');let remoteFingerprint='';
     stop=onSnapshot(doc(db,'users',user.uid),snap=>{
-      const p={...notificationDefaults,...snap.data()?.notificationPreferences};preferences.set(user.uid,p);
+      const p={...notificationDefaults,...snap.data()?.notificationPreferences};preferences.set(user.uid,p);const fingerprint=JSON.stringify(p);if(fingerprint===remoteFingerprint)return;remoteFingerprint=fingerprint;
       for(const key of ['messages','friends','games','community','quietEnabled'])form.elements[key].checked=p[key]!==false&&(key!=='quietEnabled'||p[key]===true);
       for(const key of ['quietStart','quietEnd'])form.elements[key].value=p[key];
       host.querySelector('[data-timezone]').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone;

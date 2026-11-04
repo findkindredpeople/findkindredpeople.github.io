@@ -34,7 +34,7 @@ export default {
     return new Response(response.body, { status: response.status, headers });
   },
   async scheduled(controller, env, context) {
-    context.waitUntil(sendDiscoveryAlerts(env));
+    context.waitUntil(env.KINDRED_PUSH_QUEUE ? env.KINDRED_PUSH_QUEUE.send({kind:"discovery_scan",pageToken:""},{contentType:"json"}) : sendDiscoveryAlerts(env));
   },
   async queue(batch, env) {
     for (const message of batch.messages) {
@@ -898,7 +898,7 @@ async function sendFcmMessage(
             default_vibrate_timings: true,
             channel_id: data?.type === "game_invite" ? "kindred_game_invitations"
               : ["friend_request", "friend_invite", "connection_request"].includes(data?.type)
-                ? "kindred_friend_invitations" : "kindred_messages",
+                ? "kindred_friend_invitations" : ["forum_reply","meeting_poll","meeting_vote","discovery_match","test_notification"].includes(data?.type) ? "kindred_community" : "kindred_messages",
             ...(data?.eventId ? { tag: String(data.eventId) } : {})
           } } : {})
         }
@@ -1565,7 +1565,16 @@ async function makePushPlan(body, senderId, account, accessToken) {
   const silent = reason => json({ ok: true, sent: false, reason });
   let document, notification, localized, recipients, interestedPath;
   let data = { type, senderId };
-  if (type === "forum_reply") {
+  if (type === "discovery_match") {
+    if(senderId!=="kindred_system")return fail("Only scheduled discovery can create this notification");
+    document=await get(`discoveryPushEvents/${body.messageId}`);
+    if(!document)return fail("Discovery event not found",404);
+    const uid=getString(document.fields?.userId),alert=uid?await get(`discoveryAlerts/${uid}`):null;
+    if(!uid||alert?.fields?.enabled?.booleanValue!==true||document.fields?.alertCreatedAt?.timestampValue!==alert.fields?.createdAt?.timestampValue)return silent("Discovery alerts are disabled or changed");
+    recipients=[uid];notification={title:"Kindred · New people",body:"New people match your saved search. Open Kindred to meet them."};
+    localized={en:notification,ru:{title:"Kindred · Новые люди",body:"Появились люди по твоему поиску. Открой Kindred, чтобы познакомиться."}};
+    data={...data,messageId:body.messageId};
+  } else if (type === "forum_reply") {
     const post = await get(`forumPosts/${body.postId}`);
     document = await get(`forumPosts/${body.postId}/replies/${body.replyId}`);
     if (!post || !document) return fail("Reply not found",404);
@@ -1838,6 +1847,12 @@ async function deliverPushJob(job, plan, account, token, env) {
 
 async function processPushQueueMessage(message, env) {
   const job = message.body;
+  if(job && ["discovery_scan","discovery_user"].includes(job.kind)) {
+    const account=JSON.parse(env.FIREBASE_SERVICE_ACCOUNT||"null");
+    if(!account?.project_id)throw new Error("Firebase account is not configured");
+    const token=await getGoogleAccessToken(account);
+    await processDiscoveryJob(job,account,token,env);return;
+  }
   if (!job || !["expand", "deliver"].includes(job.kind) || !job.ref || !job.senderId || !job.eventId) {
     throw new Error("Invalid queue job");
   }
@@ -1895,6 +1910,51 @@ async function sendDiscoveryAlerts(env) {
     if(!eligible.length)continue;
     const eventId="discovery_"+await pushHash(uid+":"+created+":"+eligible.sort().join(","));
     const result=await sendPushToUsers(project,token,[uid],{title:"Kindred · New people",body:"New people match your saved search. Open Kindred to meet them."},{type:"discovery_match",eventId,recipientId:uid});
-    if(result.sent){await writePushFields(project,"discoveryAlerts/"+uid,{seenIds:{arrayValue:{values:[...seen,...eligible].slice(-250).map(stringValue=>({stringValue}))}},updatedAt:{timestampValue:new Date().toISOString()}},token,a.updateTime?"?currentDocument.updateTime="+encodeURIComponent(a.updateTime):"");}
+    if(result.sent){await writePushFields(project,"discoveryAlerts/"+uid,{seenIds:{arrayValue:{values:[...seen,...eligible].slice(-250).map(stringValue=>({stringValue}))}},updatedAt:{timestampValue:new Date().toISOString()}},token,discoverySeenQuery(a.updateTime));}
   }
 }
+
+async function discoveryPage(project,path,token,pageToken="",pageSize=20) {
+  const q=new URLSearchParams({pageSize:String(pageSize)});if(pageToken)q.set("pageToken",pageToken);
+  const encoded=path.split("/").map(encodeURIComponent).join("/");
+  const response=await fetch(`https://firestore.googleapis.com/v1/projects/${encodeURIComponent(project)}/databases/(default)/documents/${encoded}?${q}`,{headers:{Authorization:`Bearer ${token}`}});
+  if(!response.ok)throw new Error(`Discovery page failed: ${response.status}`);
+  return response.json();
+}
+async function processDiscoveryJob(job,account,token,env) {
+  const project=account.project_id;
+  if(typeof(job.pageToken||"")!=="string"||(job.pageToken||"").length>4096)throw new Error("Invalid discovery cursor");
+  if(job.kind==="discovery_scan") {
+    const page=await discoveryPage(project,"discoveryAlerts",token,job.pageToken,100);
+    const tasks=(page.documents||[]).filter(d=>d.fields?.enabled?.booleanValue===true).map(d=>({body:{kind:"discovery_user",uid:d.name.split("/").pop(),pageToken:""},contentType:"json"}));
+    if(tasks.length)await env.KINDRED_PUSH_QUEUE.sendBatch(tasks);
+    if(page.nextPageToken)await env.KINDRED_PUSH_QUEUE.send({kind:"discovery_scan",pageToken:page.nextPageToken},{contentType:"json"});
+    return;
+  }
+  const uid=job.uid;if(typeof uid!=="string"||!uid||uid.includes("/")||uid.length>128)throw new Error("Invalid discovery recipient");
+  const a=await getFirestoreDocument(project,`discoveryAlerts/${uid}`,token);
+  if(!a||a.fields?.enabled?.booleanValue!==true)return;
+  const f=a.fields||{},seen=new Set(getArrayStrings(f.seenIds)),created=f.createdAt?.timestampValue||a.createTime;
+  const page=await discoveryPage(project,"profiles",token,job.pageToken,20),lower=v=>String(v||"").trim().toLowerCase(),eligible=[];
+  for(const p of page.documents||[]){
+    const x=p.fields||{},id=p.name.split("/").pop();
+    if(id===uid||seen.has(id)||x.active?.booleanValue!==true||x.adultConfirmed?.booleanValue!==true||(x.updatedAt?.timestampValue||p.updateTime)<=created)continue;
+    if(lower(getString(f.city))&&!lower(getString(x.city)).includes(lower(getString(f.city))))continue;
+    if(lower(getString(f.language))&&!getArrayStrings(x.languages).some(v=>lower(v).includes(lower(getString(f.language)))))continue;
+    if(lower(getString(f.interest))&&!getArrayStrings(x.interests).some(v=>lower(v).includes(lower(getString(f.interest)))))continue;
+    if(!await usersAreBlocked(project,uid,id,token))eligible.push(id);
+  }
+  if(eligible.length){
+    const id="discovery_"+await pushHash(uid+":"+created+":"+eligible.sort().join(","));
+    const eventPath="discoveryPushEvents/"+id;
+    const saved=await writePushFields(project,eventPath,{userId:{stringValue:uid},alertCreatedAt:{timestampValue:created},createdAt:{timestampValue:new Date().toISOString()}},token,"?currentDocument.exists=false");
+    if(!saved.ok&&![409,412].includes(saved.status))throw new Error("Could not save discovery event");
+    const ref={type:"discovery_match",messageId:id},plan=await makePushPlan(ref,"kindred_system",account,token);
+    if(!(plan instanceof Response))await env.KINDRED_PUSH_QUEUE.send({kind:"expand",senderId:"kindred_system",eventId:plan.eventId,recipients:plan.recipients,createdAt:Date.now(),ref},{contentType:"json"});
+    const updated=await writePushFields(project,`discoveryAlerts/${uid}`,{seenIds:{arrayValue:{values:[...seen,...eligible].slice(-250).map(stringValue=>({stringValue}))}},updatedAt:{timestampValue:new Date().toISOString()}},token,discoverySeenQuery(a.updateTime));
+    if(!updated.ok&&![409,412].includes(updated.status))throw new Error("Could not update discovery alert");
+  }
+  if(page.nextPageToken)await env.KINDRED_PUSH_QUEUE.send({kind:"discovery_user",uid,pageToken:page.nextPageToken},{contentType:"json"});
+}
+
+function discoverySeenQuery(updateTime){return "?updateMask.fieldPaths=seenIds&updateMask.fieldPaths=updatedAt"+(updateTime?"&currentDocument.updateTime="+encodeURIComponent(updateTime):"");}

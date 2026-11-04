@@ -7,7 +7,7 @@ const source=readFileSync(new URL('../../worker/kindred-push.js',import.meta.url
 const field=value=>typeof value==='string'?{stringValue:value}:Array.isArray(value)?{arrayValue:{values:value.map(field)}}:{booleanValue:value};
 const doc=values=>({fields:Object.fromEntries(Object.entries(values).map(([k,v])=>[k,field(v)])),createTime:'2026-11-02T09:00:00Z',updateTime:'2026-11-02T09:00:00Z'});
 function setup() {
-  const state={jobs:[],fcm:[],retries:[],acked:0,calls:0,maxCalls:0,revision:0,requestUid:'sender',now:Date.now(),
+  const state={collections:{},jobs:[],fcm:[],retries:[],acked:0,calls:0,maxCalls:0,revision:0,requestUid:'sender',now:Date.now(),
     fail:new Set(),audience:[],batchSizes:[],docs:{
       'connections/request':doc({requestedBy:'sender',recipientId:'recipient',participants:['sender','recipient'],status:'pending'}),
       'profiles/sender':doc({displayName:'Nadiia'}),
@@ -45,14 +45,15 @@ function setup() {
       const path=decodeURIComponent(url.pathname.split('/documents/')[1]||'');
       if(url.searchParams.has('pageSize')){
         const offset=Number(url.searchParams.get('pageToken')||0),size=Number(url.searchParams.get('pageSize'));
-        const documents=state.audience.slice(offset,offset+size).map(uid=>({...doc({userId:uid}),name:'projects/test/databases/(default)/documents/'+path+'/'+uid}));
-        return new Response(JSON.stringify({documents,...(offset+size<state.audience.length?{nextPageToken:String(offset+size)}:{})}));
+        const documents=state.collections[path]?state.collections[path].slice(offset,offset+size):state.audience.slice(offset,offset+size).map(uid=>({...doc({userId:uid}),name:'projects/test/databases/(default)/documents/'+path+'/'+uid}));
+        return new Response(JSON.stringify({documents,...(offset+size<(state.collections[path]?.length??state.audience.length)?{nextPageToken:String(offset+size)}:{})}));
       }
       if(options.method==='PATCH'){
         const old=state.docs[path];
         if(url.searchParams.get('currentDocument.exists')==='false'&&old)return new Response('{}',{status:409});
         if(url.searchParams.has('currentDocument.updateTime')&&old?.updateTime!==url.searchParams.get('currentDocument.updateTime'))return new Response('{}',{status:412});
-        const updated={...JSON.parse(options.body),createTime:old?.createTime||new Clock().toISOString(),
+        const body=JSON.parse(options.body);if(url.searchParams.getAll("updateMask.fieldPaths").length)body.fields={...old?.fields,...body.fields};
+        const updated={...body,createTime:old?.createTime||new Clock().toISOString(),
           updateTime:new Date(1_000_000+(++state.revision)).toISOString()};
         state.docs[path]=updated;return new Response(JSON.stringify(updated));
       }
@@ -219,4 +220,25 @@ test('quiet hours use the recipient timezone and do not deliver a stale sound la
 test('test notifications are restricted to the authenticated user',async()=>{
  const s=setup();s.state.docs['users/sender']=doc({fcmToken:'sender-token'});
  const r=await s.send({type:'test_notification',messageId:'test-1',recipientId:'recipient'});assert.equal(r.status,200);assert.equal(s.state.fcm.length,1);assert.equal(s.state.fcm[0].data.recipientId,'sender');
+});
+
+test('scheduled discovery paginates alerts and profile checks within each queue job budget',async()=>{
+ const s=setup(),now='2026-11-04T10:00:00Z';
+ const alert=doc({userId:'recipient',enabled:true,city:'Berlin',language:'German',interest:'Books',seenIds:[]});alert.fields.createdAt={timestampValue:'2026-11-03T10:00:00Z'};
+ s.state.docs['discoveryAlerts/recipient']=alert;
+ const list=[];
+ for(let i=0;i<45;i++){
+  const p=doc({active:true,adultConfirmed:true,city:i===44?'Bonn':'Berlin',languages:['German'],interests:['Books']});p.fields.updatedAt={timestampValue:now};p.name='projects/test/databases/(default)/documents/profiles/new-'+i;list.push(p);
+ }
+ s.state.collections.profiles=list;
+ assert.equal(await s.one({kind:'discovery_user',uid:'recipient',pageToken:''}),true);
+ await s.drain();assert.equal(s.state.retries.length,0);assert.ok(s.state.maxCalls<=48);assert.equal(s.state.fcm.length,6);
+ assert.equal(s.state.docs['discoveryAlerts/recipient'].fields.enabled.booleanValue,true);
+ const seen=s.state.docs['discoveryAlerts/recipient'].fields.seenIds.arrayValue.values.map(x=>x.stringValue);assert.equal(seen.length,44);assert.ok(!seen.includes('new-44'));
+});
+test('re-enabling a saved search does not deliver notifications from its previous generation',async()=>{
+ const s=setup(),a=doc({userId:'recipient',enabled:true,city:'Berlin',language:'',interest:'',seenIds:[]});a.fields.createdAt={timestampValue:'2026-11-03T10:00:00Z'};s.state.docs['discoveryAlerts/recipient']=a;
+ const p=doc({active:true,adultConfirmed:true,city:'Berlin',languages:['German'],interests:['Books']});p.fields.updatedAt={timestampValue:'2026-11-04T10:00:00Z'};p.name='projects/test/databases/(default)/documents/profiles/new-member';s.state.collections.profiles=[p];
+ await s.one({kind:'discovery_user',uid:'recipient',pageToken:''});s.state.docs['discoveryAlerts/recipient'].fields.createdAt={timestampValue:'2026-11-04T11:00:00Z'};
+ await s.drain();assert.equal(s.state.retries.length,0);assert.equal(s.state.fcm.length,0);
 });

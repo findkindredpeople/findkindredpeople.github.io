@@ -1,6 +1,7 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {isQuietTime,allowsNotification,normalizeSlots,agreedSlots,meetingCalendar,conversationStarters} from '../community-upgrade.mjs';
+import {isQuietTime,allowsNotification,normalizeSlots,agreedSlots,meetingCalendar,conversationStarters,quickStartDefaults} from '../community-upgrade.mjs';
 test('quiet hours span midnight in the recipient timezone and end exclusively',()=>{
  const p={quietEnabled:true,quietStart:'22:00',quietEnd:'08:00',timeZone:'Europe/Berlin'};
  assert.equal(isQuietTime(p,new Date('2026-11-04T21:00:00Z')),true);
@@ -25,4 +26,16 @@ test('calendar contains UTC times, escaped data and an actual reminder',()=>{
 });
 test('starter messages are drafts with concrete invitations in supported languages',()=>{
  for (const lang of ['en','ru','de','uk','ar']) {const a=conversationStarters(lang);assert.equal(a.length,3);assert.ok(a.every(x=>x.label&&x.text.length>20));}
+});
+
+test('short onboarding defaults fit the actual profile choices and use readable language names',()=>{
+ const html=readFileSync(new URL('../app.html',import.meta.url),'utf8');
+ for(const locale of ['en','ru','de','uk','ar']) {
+  const defaults=quickStartDefaults(locale);assert.ok(defaults.languages.length>2);
+  for(const [key,value] of Object.entries(defaults)) {
+   const match=html.match(new RegExp('<select[^>]*id="'+key+'"[^>]*>([\\s\\S]*?)</select>'));
+   if(key==='languages')continue;assert.ok(match,`${key} must have a real profile selector`);
+   assert.ok([...match[1].matchAll(/<option[^>]*value="([^"]*)"/g)].some(x=>x[1]===value),`${key}=${value} must remain a selectable preference`);
+  }
+ }
 });
