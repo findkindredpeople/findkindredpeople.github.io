@@ -60,7 +60,7 @@ export function checkersMove(previous, selection) {
 }
 export function checkersProofWrites(round,before,after) {
   if(after.moveCount!==before.moveCount+1)return [];
-  const proofs=[];
+  const proofs=[{id:'m',data:{group:-1,stamp:`${round}:${after.moveCount}`}}];
   if(after.lastCaptured<0){
     const count=Object.values(before.board).filter(value=>value===before.turn).length;
     for(let group=0;group<Math.ceil(count/3);group++)proofs.push({id:'c'+group,data:{group,stamp:`${round}:${before.moveCount}`}});
