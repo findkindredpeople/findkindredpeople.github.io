@@ -1746,6 +1746,7 @@ async function managePushDevice(body, uid, account) {
   if (!register && getString(owner?.fields?.uid) !== uid) return json({ ok: true, unregistered: true });
   const user = !register ? await getFirestoreDocument(project, `users/${uid}`, token) : null;
   const name = path => `projects/${project}/databases/(default)/documents/${path}`;
+  /** @type {Array<Record<string, unknown>>} */
   const writes = [{ update: { name: name(ownerPath), fields: {
     uid: { stringValue: register ? uid : "" }, mode: { stringValue: "data" },
     updatedAt: { timestampValue: new Date().toISOString() }
