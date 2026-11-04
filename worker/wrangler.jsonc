@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kindred-push",
+  "main": "kindred-push.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "queues": {
+    "producers": [{ "binding": "KINDRED_PUSH_QUEUE", "queue": "kindred-push-deliveries" }],
+    "consumers": [{
+      "queue": "kindred-push-deliveries",
+      "max_batch_size": 1,
+      "max_batch_timeout": 1,
+      "max_retries": 10,
+      "max_concurrency": 5,
+      "dead_letter_queue": "kindred-push-failed"
+    }]
+  },
+  "triggers": {"crons": ["0 * * * *"]}
+}

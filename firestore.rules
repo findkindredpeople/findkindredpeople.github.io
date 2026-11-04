@@ -6,7 +6,7 @@ service cloud.firestore {
     function moderator() { return signedIn() && exists(/databases/$(database)/documents/moderators/$(request.auth.uid)); }
     function participant(data) { return signedIn() && request.auth.uid in data.participants; }
     function validProfile() {
-      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','friendshipGoal','connectionMode','contactFrequency','socialFormat','communicationStyle','socialEnergy','spontaneousInvites','conversationDepth','newCityRole','timeZone','meetingPace','availableTimes','intercultural','namePronunciation','preferredContactTime','comfortableTopics','culturalContext','photoURL','active','adultConfirmed','updatedAt'])
+      return request.resource.data.keys().hasOnly(['displayName','city','country','bio','interests','languages','availability','friendshipGoal','connectionMode','contactFrequency','socialFormat','communicationStyle','socialEnergy','spontaneousInvites','conversationDepth','newCityRole','timeZone','meetingPace','availableTimes','intercultural','namePronunciation','preferredContactTime','comfortableTopics','culturalContext','photoURL','zodiacSign','active','adultConfirmed','updatedAt'])
         && request.resource.data.displayName is string && request.resource.data.displayName.size() >= 2 && request.resource.data.displayName.size() <= 50
         && request.resource.data.city is string && request.resource.data.city.size() >= 2 && request.resource.data.city.size() <= 80
         && request.resource.data.country is string && request.resource.data.country.size() >= 2 && request.resource.data.country.size() <= 80
@@ -23,14 +23,16 @@ service cloud.firestore {
         && request.resource.data.conversationDepth in ['deep','light','both']
         && request.resource.data.newCityRole in ['newcomer','localHelper','either']
         && request.resource.data.timeZone is string && request.resource.data.timeZone.size() <= 80
-        && request.resource.data.meetingPace in ['soon','later','travel','onlineOnly']
-        && request.resource.data.availableTimes is list && request.resource.data.availableTimes.size() >= 1 && request.resource.data.availableTimes.size() <= 6
-        && request.resource.data.availableTimes.hasOnly(['weekdayMorning','weekdayDaytime','weekdayEvening','weekendMorning','weekendDaytime','weekendEvening'])
+        && request.resource.data.meetingPace in ['soon','later','flexible','travel','onlineOnly']
+        && request.resource.data.availableTimes is list && request.resource.data.availableTimes.size() >= 0 && request.resource.data.availableTimes.size() <= 6
+        && request.resource.data.availableTimes.hasOnly(['weekdayMorning','weekdayDaytime','weekdayEvening','weekendMorning','weekendDaytime','weekendEvening','weekdaymorning','weekdaydaytime','weekdayevening','weekendmorning','weekenddaytime','weekendevening'])
         && request.resource.data.intercultural is bool
         && request.resource.data.get('namePronunciation', '') is string && request.resource.data.get('namePronunciation', '').size() <= 100
         && request.resource.data.get('preferredContactTime', 'flexible') in ['morning','afternoon','evening','flexible']
         && request.resource.data.get('comfortableTopics', []) is list && request.resource.data.get('comfortableTopics', []).size() <= 10
         && request.resource.data.get('culturalContext', '') is string && request.resource.data.get('culturalContext', '').size() <= 300
+        && request.resource.data.get('zodiacSign', '') is string
+        && request.resource.data.get('zodiacSign', '') in ['', 'aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces']
         && request.resource.data.active is bool && request.resource.data.adultConfirmed == true;
     }
     function validAgreement(data) {
@@ -79,30 +81,84 @@ service cloud.firestore {
       return !exists(/databases/$(database)/documents/blocks/$(data.participants[0] + '_' + data.participants[1]))
         && !exists(/databases/$(database)/documents/blocks/$(data.participants[1] + '_' + data.participants[0]));
     }
+    function validGroup(data) {
+      return data is map
+        && data.keys().hasOnly(['name','topic','description','ownerId','ownerName','memberIds','invitedIds','createdAt','updatedAt','deleting'])
+        && data.name is string && data.name.size() >= 3 && data.name.size() <= 60
+        && data.topic is string && data.topic.size() >= 2 && data.topic.size() <= 40
+        && data.description is string && data.description.size() >= 20 && data.description.size() <= 500
+        && data.ownerId is string && data.ownerId.size() >= 1
+        && data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 80
+        && data.memberIds is list && data.memberIds.size() >= 1 && data.memberIds.size() <= 100
+        && data.invitedIds is list && data.invitedIds.size() <= 100
+        && data.ownerId in data.memberIds
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && data.get('deleting', false) is bool;
+    }
+    function groupDocument(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+    function validPostData(data) {
+      return data is map
+        && data.keys().hasOnly(['authorId','authorName','authorPhotoUrl','text','photoUrl','musicLink','createdAt','visibility','viewerIds'])
+        && data.authorId == request.auth.uid
+        && data.authorName is string
+        && data.authorName.size() >= 1
+        && data.authorName.size() <= 80
+        && data.get('authorPhotoUrl', '') is string
+        && data.get('authorPhotoUrl', '').size() <= 250000
+        && data.text is string
+        && data.text.size() <= 2000
+        && data.photoUrl is string
+        && data.photoUrl.size() <= 250000
+        && data.musicLink is string
+        && data.musicLink.size() <= 1000
+        && data.createdAt is int
+        && data.get('visibility', 'all') in ['all','connections','only_me']
+        && data.get('viewerIds', []) is list
+        && data.get('viewerIds', []).size() <= 100
+        && (data.text.size() >= 1 || data.photoUrl.size() >= 1 || data.musicLink.size() >= 1);
+    }
+    function limitedPostDocument(postId) {
+      return get(/databases/$(database)/documents/limitedPosts/$(postId)).data;
+    }
+    function canReadLimitedPost(postId) {
+      return signedIn()
+        && (limitedPostDocument(postId).authorId == request.auth.uid
+          || request.auth.uid in limitedPostDocument(postId).viewerIds);
+    }
+
+    // Community helpers. The Android app has a verified profile flag, while
+    // the web community can self-attest adult status on meetup writes.
     function adultProfile(uid) {
-      return exists(/databases/$(database)/documents/profiles/$(uid))
+      return signedIn()
+        && request.auth.uid == uid
+        && exists(/databases/$(database)/documents/profiles/$(uid))
         && get(/databases/$(database)/documents/profiles/$(uid)).data.adultConfirmed == true;
     }
-    function adultPostAttestation() {
-      return request.resource.data.get('adultConfirmed', false) == true;
-    }
+
     function adultCommunityMember(uid) {
       return signedIn()
         && request.auth.uid == uid
-        && (adultProfile(uid) || adultPostAttestation());
+        && (adultProfile(uid)
+          || request.resource.data.get('adultConfirmed', false) == true);
     }
+
     function meetupExists(meetupId) {
       return exists(/databases/$(database)/documents/meetups/$(meetupId));
     }
+
     function meetupPublic(meetupId) {
       return meetupExists(meetupId)
         && get(/databases/$(database)/documents/meetups/$(meetupId)).data.status in ['visible','cancelled'];
     }
+
     function meetupHost(meetupId) {
       return signedIn()
         && meetupExists(meetupId)
         && get(/databases/$(database)/documents/meetups/$(meetupId)).data.creatorId == request.auth.uid;
     }
+
     function meetupParticipant(meetupId) {
       return signedIn()
         && (meetupHost(meetupId)
@@ -116,6 +172,20 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['online','lastSeen'])
         && request.resource.data.online is bool;
       allow delete: if owner(uid);
+    }
+    match /presenceSessions/{presenceId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid','sessionId','online','lastSeen'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sessionId is string
+        && request.resource.data.sessionId.size() >= 16
+        && request.resource.data.sessionId.size() <= 80
+        && presenceId == request.auth.uid + '_' + request.resource.data.sessionId
+        && request.resource.data.online is bool
+        && request.resource.data.lastSeen is timestamp
+        && request.resource.data.lastSeen == request.time;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
     match /profiles/{uid} {
       allow read: if signedIn();
@@ -142,7 +212,11 @@ service cloud.firestore {
         || (participant(resource.data) && resource.data.status == 'accepted'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['journeys','updatedAt'])
         && validJourney(request.resource.data.journeys[request.auth.uid])
-        && request.resource.data.journeys.diff(resource.data.get('journeys', {})).affectedKeys().hasOnly([request.auth.uid]));
+        && request.resource.data.journeys.diff(resource.data.get('journeys', {})).affectedKeys().hasOnly([request.auth.uid]))
+        || (participant(resource.data) && resource.data.status == 'accepted'
+        && request.resource.data.status == 'removed'
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt']));
       allow delete: if participant(resource.data);
     }
     match /connections/{connectionId}/messages/{messageId} {
@@ -191,7 +265,8 @@ service cloud.firestore {
         && request.resource.data.call.respondedBy == request.auth.uid
         && request.resource.data.call.respondedAt is string
         && request.resource.data.call.respondedAt.size() >= 10 && request.resource.data.call.respondedAt.size() <= 50);
-      allow delete: if false;
+      // Either participant can remove this shared conversation during account cleanup.
+      allow delete: if participant(connection(connectionId));
     }
     match /blocks/{id} {
       allow read: if signedIn() && (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
@@ -213,56 +288,342 @@ service cloud.firestore {
       allow update: if moderator();
       allow delete: if false;
     }
+    // Kindred Games: two-player Durak rooms with an in-room text chat.
+    // Game rooms contain no money, betting, prizes or purchasable outcomes.
+    function gameRoom(roomId) {
+      return get(/databases/$(database)/documents/gameRooms/$(roomId)).data;
+    }
+    function gameParticipant(roomId) {
+      return signedIn() && request.auth.uid in gameRoom(roomId).participants;
+    }
+    function validGameShape(data) {
+      return data is map
+        && data.keys().hasOnly(['gameType','mode','status','player1Id','player1Name','player2Id','player2Name','participants','deck','hand1','hand2','trumpSuit','attackerId','defenderId','currentTurnId','phase','attackCards','defenseCards','roundLimit','discardedCount','winnerId','loserId','rematchRequestedBy','createdAt','updatedAt'])
+        && data.gameType == 'durak'
+        && data.mode in ['random','invite']
+        && data.status in ['waiting','invited','playing','finished','declined','cancelled']
+        && data.player1Id is string && data.player1Id.size() >= 1
+        && data.player1Name is string && data.player1Name.size() >= 1 && data.player1Name.size() <= 80
+        && data.player2Id is string
+        && data.player2Name is string && data.player2Name.size() <= 80
+        && data.participants is list && data.participants.size() >= 1 && data.participants.size() <= 2
+        && data.player1Id in data.participants
+        && data.deck is list && data.deck.size() <= 36
+        && data.hand1 is list && data.hand1.size() <= 36
+        && data.hand2 is list && data.hand2.size() <= 36
+        && data.trumpSuit in ['', 'C','D','H','S']
+        && data.attackerId is string && data.defenderId is string && data.currentTurnId is string
+        && data.phase in ['waiting','attack','defend','throw','take_throw','finished']
+        && data.attackCards is list && data.attackCards.size() <= 6
+        && data.defenseCards is list && data.defenseCards.size() <= 6
+        && data.roundLimit is int && data.roundLimit >= 0 && data.roundLimit <= 6
+        && data.discardedCount is int && data.discardedCount >= 0 && data.discardedCount <= 36
+        && data.winnerId is string && data.loserId is string && data.rematchRequestedBy is string
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
 
-    match /forumPosts/{postId} {
-      allow read: if resource.data.status == 'visible' || moderator();
+    match /gameRooms/{roomId} {
+      allow read: if signedIn()
+        && (request.auth.uid in resource.data.participants
+          || (resource.data.mode == 'random' && resource.data.status == 'waiting'));
+
       allow create: if signedIn()
-        && adultCommunityMember(request.auth.uid)
+        && validGameShape(request.resource.data)
+        && request.resource.data.player1Id == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && ((request.resource.data.mode == 'random'
+              && request.resource.data.status == 'waiting'
+              && request.resource.data.player2Id == ''
+              && request.resource.data.participants.size() == 1)
+          || (request.resource.data.mode == 'invite'
+              && request.resource.data.status == 'invited'
+              && request.resource.data.player2Id.size() >= 1
+              && request.resource.data.player2Id != request.auth.uid
+              && request.resource.data.player2Id in request.resource.data.participants
+              && request.resource.data.participants.size() == 2));
+
+      // Existing participants may advance the room state, but identities and
+      // the original participant list cannot be rewritten. Firestore
+      // transactions in the app handle turn conflicts atomically.
+      allow update: if signedIn() && validGameShape(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && (
+          (request.auth.uid in resource.data.participants
+            && request.resource.data.player1Id == resource.data.player1Id
+            && request.resource.data.player1Name == resource.data.player1Name
+            && request.resource.data.player2Id == resource.data.player2Id
+            && request.resource.data.player2Name == resource.data.player2Name
+            && request.resource.data.participants == resource.data.participants
+            && request.resource.data.mode == resource.data.mode
+            && request.resource.data.gameType == resource.data.gameType
+            && request.resource.data.createdAt == resource.data.createdAt)
+          ||
+          // A signed-in user may claim one genuinely open random table once.
+          (resource.data.mode == 'random'
+            && resource.data.status == 'waiting'
+            && resource.data.player2Id == ''
+            && request.auth.uid != resource.data.player1Id
+            && request.resource.data.player1Id == resource.data.player1Id
+            && request.resource.data.player1Name == resource.data.player1Name
+            && request.resource.data.player2Id == request.auth.uid
+            && request.resource.data.player2Name.size() >= 1
+            && request.resource.data.participants.size() == 2
+            && resource.data.player1Id in request.resource.data.participants
+            && request.auth.uid in request.resource.data.participants
+            && request.resource.data.mode == 'random'
+            && request.resource.data.gameType == 'durak'
+            && request.resource.data.createdAt == resource.data.createdAt)
+        );
+
+      allow delete: if signedIn() && request.auth.uid in resource.data.participants;
+    }
+
+    match /gameRooms/{roomId}/messages/{messageId} {
+      allow read: if gameParticipant(roomId);
+      allow create: if gameParticipant(roomId)
+        && request.resource.data.keys().hasOnly(['senderId','senderName','text','createdAt'])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.senderName is string
+        && request.resource.data.senderName.size() >= 1
+        && request.resource.data.senderName.size() <= 80
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if gameParticipant(roomId);
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validPostData(request.resource.data)
+        && request.resource.data.get('visibility', 'all') == 'all'
+        && request.resource.data.get('viewerIds', []).size() == 0;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+    match /posts/{postId}/likes/{likeId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && exists(/databases/$(database)/documents/posts/$(postId))
+        && likeId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId','createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt is timestamp;
+      allow delete: if signedIn()
+        && (likeId == request.auth.uid
+          || get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid);
+    }
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/posts/$(postId))
+        && request.resource.data.keys().hasOnly(['authorId','authorName','text','createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() >= 1
+        && request.resource.data.authorName.size() <= 80
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.authorId == request.auth.uid
+          || get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid);
+    }
+    match /limitedPosts/{postId} {
+      allow read: if signedIn()
+        && (resource.data.authorId == request.auth.uid
+          || request.auth.uid in resource.data.viewerIds);
+      allow create: if signedIn()
+        && validPostData(request.resource.data)
+        && request.resource.data.visibility in ['connections','only_me']
+        && request.resource.data.viewerIds.size() >= 1
+        && request.auth.uid in request.resource.data.viewerIds
+        && (request.resource.data.visibility != 'only_me'
+          || request.resource.data.viewerIds.size() == 1);
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+    match /limitedPosts/{postId}/likes/{likeId} {
+      allow read: if canReadLimitedPost(postId);
+      allow create, update: if canReadLimitedPost(postId)
+        && likeId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId','createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt is timestamp;
+      allow delete: if canReadLimitedPost(postId)
+        && (likeId == request.auth.uid
+          || limitedPostDocument(postId).authorId == request.auth.uid);
+    }
+    match /limitedPosts/{postId}/comments/{commentId} {
+      allow read: if canReadLimitedPost(postId);
+      allow create: if canReadLimitedPost(postId)
+        && request.resource.data.keys().hasOnly(['authorId','authorName','text','createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() >= 1
+        && request.resource.data.authorName.size() <= 80
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if canReadLimitedPost(postId)
+        && (resource.data.authorId == request.auth.uid
+          || limitedPostDocument(postId).authorId == request.auth.uid);
+    }
+    match /groups/{groupId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validGroup(request.resource.data)
+        && request.resource.data.get('deleting', false) == false
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.get('deleting', false) == false
+        && request.resource.data.get('deleting', false) == false
+        && validGroup(request.resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          (request.auth.uid == resource.data.ownerId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','topic','description','ownerName','memberIds','invitedIds','updatedAt']))
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds','updatedAt'])
+            && (
+              (!(request.auth.uid in resource.data.memberIds)
+                && request.auth.uid in request.resource.data.memberIds
+                && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+                && request.resource.data.memberIds.hasAll(resource.data.memberIds))
+              ||
+              (request.auth.uid in resource.data.memberIds
+                && !(request.auth.uid in request.resource.data.memberIds)
+                && request.auth.uid != resource.data.ownerId
+                && resource.data.memberIds.size() == request.resource.data.memberIds.size() + 1
+                && resource.data.memberIds.hasAll(request.resource.data.memberIds))
+            )
+          )
+          || (
+            request.auth.uid in resource.data.invitedIds
+            && !(request.auth.uid in request.resource.data.invitedIds)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds','invitedIds','updatedAt'])
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+          )
+          || (
+            request.auth.uid in resource.data.invitedIds
+            && !(request.auth.uid in request.resource.data.invitedIds)
+            && request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['invitedIds','updatedAt'])
+          )
+        );
+      // Owner closes the group before deleting message pages. Closed groups
+      // cannot receive messages or membership changes, including from old clients.
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && resource.data.get('deleting', false) == false
+        && request.resource.data.deleting == true
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleting','updatedAt']);
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+    match /groups/{groupId}/messages/{messageId} {
+      allow read: if signedIn() && request.auth.uid in groupDocument(groupId).memberIds;
+      allow create: if signedIn()
+        && groupDocument(groupId).get('deleting', false) == false
+        && request.auth.uid in groupDocument(groupId).memberIds
+        && request.resource.data.keys().hasOnly(['senderId','senderName','text','createdAt'])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.senderName is string
+        && request.resource.data.senderName.size() >= 1
+        && request.resource.data.senderName.size() <= 80
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.senderId == request.auth.uid
+          || groupDocument(groupId).ownerId == request.auth.uid);
+    }
+    match /forumPosts/{postId} {
+      // Public forum listing must query status == 'visible'. Moderators and
+      // authors may still read their own non-public documents directly.
+      allow read: if resource.data.status == 'visible'
+        || moderator()
+        || (signedIn() && resource.data.authorId == request.auth.uid);
+
+      // Compatible with the current forum page (author/category/text/status/
+      // createdAt) and with the extended city/country/adultConfirmed shape.
+      allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['authorId','authorName','category','country','city','text','status','adultConfirmed','createdAt'])
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.authorName is string
         && request.resource.data.authorName.size() >= 1
-        && request.resource.data.authorName.size() <= 50
+        && request.resource.data.authorName.size() <= 80
         && request.resource.data.category in ['New in Town','Friendship & Connection','Activities','Languages & Culture','Ask the Community','Looking for company','Parents']
-        && request.resource.data.country is string
-        && request.resource.data.country.size() <= 60
-        && request.resource.data.city is string
-        && request.resource.data.city.size() <= 60
+        && request.resource.data.get('country', '') is string
+        && request.resource.data.get('country', '').size() <= 60
+        && request.resource.data.get('city', '') is string
+        && request.resource.data.get('city', '').size() <= 60
         && request.resource.data.text is string
         && request.resource.data.text.size() >= 10
         && request.resource.data.text.size() <= 1200
-        && request.resource.data.status == 'visible';
+        && request.resource.data.status == 'visible'
+        && request.resource.data.get('adultConfirmed', true) == true
+        && request.resource.data.createdAt is timestamp;
+
       allow update: if moderator()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
         && request.resource.data.status in ['visible','hidden','removed'];
-      allow delete: if moderator();
+
+      allow delete: if moderator()
+        || (signedIn() && resource.data.authorId == request.auth.uid);
     }
+
     match /forumReports/{reportId} {
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['reporterId','postId','reason','status','createdAt'])
+        && request.resource.data.keys().hasOnly(['reporterId','postId','replyId','reason','status','createdAt'])
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.postId is string
         && request.resource.data.postId.size() >= 1
         && request.resource.data.reason is string
         && request.resource.data.reason.size() >= 5
         && request.resource.data.reason.size() <= 500
-        && request.resource.data.status == 'open';
-      allow read: if moderator() || (signedIn() && resource.data.reporterId == request.auth.uid);
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt is timestamp;
+
+      allow read: if moderator()
+        || (signedIn() && resource.data.reporterId == request.auth.uid);
+
       allow update: if moderator()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status in ['open','reviewed','resolved','dismissed'];
+        && request.resource.data.status in ['open','reviewed','dismissed'];
+
       allow delete: if false;
     }
 
+    // Kindred web Meetups. Cancelled meetups stay readable so the web
+    // interface can show cancellation, but joining/writing is allowed only
+    // while the meetup status is visible.
     match /meetups/{meetupId} {
-      allow read: if resource.data.status in ['visible','cancelled'] || moderator();
+      allow read: if resource.data.status in ['visible','cancelled']
+        || moderator()
+        || (signedIn() && resource.data.creatorId == request.auth.uid);
+
       allow create: if signedIn()
         && adultCommunityMember(request.auth.uid)
         && request.resource.data.keys().hasOnly(['creatorId','creatorName','type','city','country','language','date','time','details','status','adultConfirmed','createdAt'])
         && request.resource.data.creatorId == request.auth.uid
         && request.resource.data.creatorName is string
         && request.resource.data.creatorName.size() >= 1
-        && request.resource.data.creatorName.size() <= 50
+        && request.resource.data.creatorName.size() <= 80
         && request.resource.data.type in ['Coffee','Walk','Language exchange','Parents','Games']
         && request.resource.data.city is string
         && request.resource.data.city.size() >= 2
@@ -278,41 +639,321 @@ service cloud.firestore {
         && request.resource.data.time is string
         && request.resource.data.time.matches('[0-9]{2}:[0-9]{2}')
         && request.resource.data.details is string
-        && request.resource.data.details.size() >= 20
+        && request.resource.data.details.size() >= 10
         && request.resource.data.details.size() <= 500
-        && request.resource.data.status == 'visible';
-      allow update: if meetupHost(meetupId)
+        && request.resource.data.status == 'visible'
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if (moderator()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status == 'cancelled';
-      allow delete: if moderator();
+        && request.resource.data.status in ['visible','hidden','removed','cancelled'])
+        || (signedIn()
+          && resource.data.creatorId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status == 'cancelled');
+
+      allow delete: if moderator()
+        || (signedIn() && resource.data.creatorId == request.auth.uid);
     }
+
     match /meetups/{meetupId}/interested/{uid} {
+      // Keep the participant list compatible with the existing public meetup
+      // page. A cancelled meetup cannot receive new interested users.
       allow read: if meetupPublic(meetupId) || moderator();
+
       allow create, update: if signedIn()
         && uid == request.auth.uid
         && adultCommunityMember(request.auth.uid)
-        && meetupPublic(meetupId)
+        && meetupExists(meetupId)
+        && get(/databases/$(database)/documents/meetups/$(meetupId)).data.status == 'visible'
         && request.resource.data.keys().hasOnly(['userId','userName','adultConfirmed','createdAt'])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.userName is string
         && request.resource.data.userName.size() >= 1
-        && request.resource.data.userName.size() <= 50;
-      allow delete: if signedIn() && uid == request.auth.uid;
+        && request.resource.data.userName.size() <= 80
+        && request.resource.data.createdAt is timestamp;
+
+      allow delete: if signedIn()
+        && (uid == request.auth.uid || moderator());
     }
+
     match /meetups/{meetupId}/messages/{messageId} {
       allow read: if meetupParticipant(meetupId) || moderator();
+
       allow create: if meetupParticipant(meetupId)
+        && meetupExists(meetupId)
+        && get(/databases/$(database)/documents/meetups/$(meetupId)).data.status == 'visible'
         && request.resource.data.keys().hasOnly(['authorId','authorName','text','createdAt'])
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.authorName is string
         && request.resource.data.authorName.size() >= 1
-        && request.resource.data.authorName.size() <= 50
+        && request.resource.data.authorName.size() <= 80
         && request.resource.data.text is string
         && request.resource.data.text.size() >= 1
-        && request.resource.data.text.size() <= 500;
-      allow update, delete: if false;
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if false;
+
+      allow delete: if signedIn()
+        && (resource.data.authorId == request.auth.uid
+          || meetupHost(meetupId)
+          || moderator());
     }
 
     match /moderators/{uid} { allow read: if owner(uid); allow write: if false; }
+    // Kindred online arcade v1. Existing app and website rules are kept above.
+    function arcadeRoom(id) { return get(/databases/$(database)/documents/arcadeRooms/$(id)).data; }
+    function arcadeMember(id) { return signedIn() && request.auth.uid in arcadeRoom(id).participants; }
+    function arcadeShape(d) {
+      return d.keys().hasOnly(['gameType','mode','status','player1Id','player1Name','player2Id','player2Name','participants','connectionId','state','rematchRequestedBy','round','createdAt','updatedAt','heartbeatAt'])
+        && d.gameType in ['tic_tac_toe','connect_four','memory'] && d.mode in ['random','invite']
+        && d.status in ['waiting','invited','playing','finished','cancelled','declined']
+        && d.player1Id is string && d.player1Id.size() >= 1 && d.player1Id.size() <= 128
+        && d.player2Id is string && d.player2Id.size() <= 128
+        && d.player1Name is string && d.player1Name.size() >= 1 && d.player1Name.size() <= 80
+        && d.player2Name is string && d.player2Name.size() <= 80
+        && d.participants is list && d.participants.size() >= 1 && d.participants.size() <= 2
+        && d.connectionId is string && d.connectionId.size() <= 256
+        && d.rematchRequestedBy is string && d.round is int && d.round >= 1
+        && d.createdAt is timestamp && d.updatedAt is timestamp && d.heartbeatAt is timestamp
+        && d.state is map && d.state.keys().hasOnly(['board','tokens1','tokens2','deck','matched','firstCard','secondCard','score1','score2','turn','winner','lastMove','moveCount'])
+        && d.state.board is map && d.state.tokens1 is list && d.state.tokens2 is list && d.state.deck is list && d.state.matched is list
+        && d.state.firstCard is int && d.state.secondCard is int
+        && d.state.score1 is int && d.state.score2 is int
+        && d.state.turn is int && d.state.turn in [1,2] && d.state.winner is int && d.state.winner in [0,1,2,3]
+        && d.state.lastMove is int && d.state.moveCount is int;
+    }
+    function arcadeInitial(d) {
+      return d.state.board == {} && d.state.tokens1 == [] && d.state.tokens2 == [] && d.state.matched == []
+        && d.state.firstCard == -1 && d.state.secondCard == -1
+        && d.state.score1 == 0 && d.state.score2 == 0
+        && d.state.turn == 1 && d.state.winner == 0 && d.state.lastMove == -1 && d.state.moveCount == 0
+        && ((d.gameType != 'memory' && d.state.deck == [])
+          || (d.gameType == 'memory' && d.state.deck.size() == 16
+            && d.state.deck.hasOnly([0,1,2,3,4,5,6,7])
+            && d.state.deck.removeAll([0]).size() == 14 && d.state.deck.removeAll([1]).size() == 14
+            && d.state.deck.removeAll([2]).size() == 14 && d.state.deck.removeAll([3]).size() == 14
+            && d.state.deck.removeAll([4]).size() == 14 && d.state.deck.removeAll([5]).size() == 14
+            && d.state.deck.removeAll([6]).size() == 14 && d.state.deck.removeAll([7]).size() == 14));
+    }
+    function arcadeInvite(d) {
+      let c = get(/databases/$(database)/documents/connections/$(d.connectionId)).data;
+      return c.status == 'accepted' && c.participants.toSet() == d.participants.toSet() && notBlocked(d);
+    }
+    function arcadeTicWin(cells) {
+      return cells.hasAll([0,1,2]) || cells.hasAll([3,4,5]) || cells.hasAll([6,7,8])
+        || cells.hasAll([0,3,6]) || cells.hasAll([1,4,7]) || cells.hasAll([2,5,8])
+        || cells.hasAll([0,4,8]) || cells.hasAll([2,4,6]);
+    }
+    function arcadeFourWin(cells,i) {
+      let r = int(i / 7);
+      let c = i % 7;
+      return (c <= 3 && cells.hasAll([i,i+1,i+2,i+3]))
+        || (c >= 1 && c <= 4 && cells.hasAll([i-1,i,i+1,i+2]))
+        || (c >= 2 && c <= 5 && cells.hasAll([i-2,i-1,i,i+1]))
+        || (c >= 3 && cells.hasAll([i-3,i-2,i-1,i]))
+        || (r <= 2 && cells.hasAll([i,i+7,i+14,i+21]))
+        || (r <= 2 && c <= 3 && cells.hasAll([i,i+8,i+16,i+24]))
+        || (r >= 1 && r <= 3 && c >= 1 && c <= 4 && cells.hasAll([i-8,i,i+8,i+16]))
+        || (r >= 2 && r <= 4 && c >= 2 && c <= 5 && cells.hasAll([i-16,i-8,i,i+8]))
+        || (r >= 3 && c >= 3 && cells.hasAll([i-24,i-16,i-8,i]))
+        || (r <= 2 && c >= 3 && cells.hasAll([i,i+6,i+12,i+18]))
+        || (r >= 1 && r <= 3 && c >= 2 && c <= 5 && cells.hasAll([i-6,i,i+6,i+12]))
+        || (r >= 2 && r <= 4 && c >= 1 && c <= 4 && cells.hasAll([i-12,i-6,i,i+6]))
+        || (r >= 3 && c <= 3 && cells.hasAll([i-18,i-12,i-6,i]));
+    }
+    function arcadeTokenMove(a,b) {
+      let before = a.turn == 1 ? a.tokens1 : a.tokens2;
+      let after = a.turn == 1 ? b.tokens1 : b.tokens2;
+      return after.size() == before.size()+1 && after.hasAll(before) && after.hasAll([b.lastMove])
+        && (a.turn == 1 ? b.tokens2 == a.tokens2 : b.tokens1 == a.tokens1);
+    }
+    function arcadeBoardMove(o,n) {
+      let a = o.state;
+      let b = n.state;
+      let limit = o.gameType == 'tic_tac_toe' ? 9 : 42;
+      let cells = a.turn == 1 ? b.tokens1 : b.tokens2;
+      let won = o.gameType == 'tic_tac_toe' ? arcadeTicWin(cells) : (cells.size() >= 4 && arcadeFourWin(cells,b.lastMove));
+      let result = won ? a.turn : (b.board.size() == limit ? 3 : 0);
+      return b.board is map && b.tokens1 is list && b.tokens2 is list && b.lastMove is int && b.moveCount is int
+        && b.turn is int && b.winner is int
+        && b.diff(a).affectedKeys().hasOnly(['board','tokens1','tokens2','turn','winner','lastMove','moveCount']) && arcadeTokenMove(a,b)
+        && b.lastMove >= 0 && b.lastMove < limit
+        && !a.board.keys().hasAny([string(b.lastMove)])
+        && b.board.size() == a.board.size()+1
+        && b.board.diff(a.board).affectedKeys().hasOnly([string(b.lastMove)])
+        && b.board[string(b.lastMove)] == a.turn
+        && (o.gameType != 'connect_four' || b.lastMove >= 35 || a.board.get(string(b.lastMove+7),0) in [1,2])
+        && b.moveCount == a.moveCount+1 && b.winner == result
+        && b.turn == (result == 0 ? 3-a.turn : a.turn)
+        && n.status == (result == 0 ? 'playing' : 'finished');
+    }
+    function arcadeMemoryMatch(o,n) {
+      let a = o.state;
+      let b = n.state;
+      let s1 = a.score1 + (a.turn == 1 ? 1 : 0);
+      let s2 = a.score2 + (a.turn == 2 ? 1 : 0);
+      let result = b.matched.size() != 16 ? 0 : (s1 > s2 ? 1 : (s2 > s1 ? 2 : 3));
+      return b.diff(a).affectedKeys().hasOnly(['firstCard','secondCard','matched','score1','score2','winner','lastMove','moveCount'])
+        && a.deck[a.firstCard] == a.deck[b.lastMove]
+        && b.matched == a.matched.concat([a.firstCard,b.lastMove])
+        && b.firstCard == -1 && b.secondCard == -1
+        && b.score1 == s1 && b.score2 == s2 && b.winner == result && b.moveCount == a.moveCount+1
+        && n.status == (result == 0 ? 'playing' : 'finished');
+    }
+    function arcadeMemoryMove(o,n) {
+      let a = o.state;
+      let b = n.state;
+      return b.firstCard is int && b.secondCard is int && b.lastMove is int && b.moveCount is int
+        && b.score1 is int && b.score2 is int && b.turn is int && b.winner is int && b.matched is list
+        && ((a.firstCard >= 0 && a.secondCard >= 0
+          && b.diff(a).affectedKeys().hasOnly(['firstCard','secondCard','turn'])
+          && b.firstCard == -1 && b.secondCard == -1 && b.turn == 3-a.turn && n.status == 'playing')
+        || (a.secondCard == -1 && b.lastMove >= 0 && b.lastMove < 16
+          && !(b.lastMove in a.matched) && b.lastMove != a.firstCard
+          && ((a.firstCard == -1 && b.firstCard == b.lastMove
+                && b.diff(a).affectedKeys().hasOnly(['firstCard','lastMove']) && n.status == 'playing')
+            || (a.firstCard >= 0 &&
+              (arcadeMemoryMatch(o,n)
+                || (a.deck[a.firstCard] != a.deck[b.lastMove]
+                  && b.secondCard == b.lastMove && b.moveCount == a.moveCount+1
+                  && b.diff(a).affectedKeys().hasOnly(['secondCard','lastMove','moveCount']) && n.status == 'playing'))))));
+    }
+    function arcadeMove(o,n) {
+      return o.status == 'playing' && o.state.winner == 0 && notBlocked(o)
+        && request.auth.uid == (o.state.turn == 1 ? o.player1Id : o.player2Id)
+        && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt'])
+        && (o.gameType == 'memory' ? arcadeMemoryMove(o,n) : arcadeBoardMove(o,n));
+    }
+    function arcadeOtherAction(o,n) {
+      let me = request.auth.uid == o.player1Id ? 1 : 2;
+      return (o.status in ['waiting','invited'] && request.auth.uid == o.player1Id
+          && n.status == 'cancelled' && n.diff(o).affectedKeys().hasOnly(['status','updatedAt']))
+        || (o.status == 'invited' && request.auth.uid == o.player2Id
+          && (n.status == 'declined' || (n.status == 'playing' && notBlocked(o)))
+          && n.diff(o).affectedKeys().hasOnly(['status','updatedAt']))
+        || (o.status == 'playing' && n.status == 'finished' && n.state.winner is int && n.state.winner == 3-me
+          && n.state.diff(o.state).affectedKeys().hasOnly(['winner']) && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt']))
+        || (o.status == 'finished' && n.status == 'finished' && n.rematchRequestedBy == request.auth.uid
+          && o.rematchRequestedBy in ['',request.auth.uid] && n.diff(o).affectedKeys().hasOnly(['rematchRequestedBy','updatedAt']))
+        || (o.status == 'finished' && o.rematchRequestedBy != '' && o.rematchRequestedBy != request.auth.uid && notBlocked(o)
+          && n.status == 'playing' && n.rematchRequestedBy == '' && n.round == o.round+1 && arcadeShape(n) && arcadeInitial(n)
+          && n.diff(o).affectedKeys().hasOnly(['status','state','round','rematchRequestedBy','updatedAt']));
+    }
+    match /arcadeRooms/{id} {
+      allow read: if signedIn() && (request.auth.uid in resource.data.participants || (resource.data.mode == 'random' && resource.data.status == 'waiting'));
+      allow create: if signedIn() && arcadeShape(request.resource.data) && arcadeInitial(request.resource.data)
+        && request.resource.data.player1Id == request.auth.uid && request.resource.data.round == 1 && request.resource.data.rematchRequestedBy == ''
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time && request.resource.data.heartbeatAt == request.time
+        && ((request.resource.data.mode == 'random' && request.resource.data.status == 'waiting'
+            && request.resource.data.player2Id == '' && request.resource.data.player2Name == '' && request.resource.data.connectionId == ''
+            && request.resource.data.participants == [request.auth.uid])
+          || (request.resource.data.mode == 'invite' && request.resource.data.status == 'invited'
+            && request.resource.data.player2Id != '' && request.resource.data.player2Id != request.auth.uid && request.resource.data.player2Name.size() >= 1
+            && request.resource.data.participants == [request.auth.uid,request.resource.data.player2Id] && arcadeInvite(request.resource.data)));
+      // Each branch validates its changed fields and freezes all other fields.
+      // Avoid re-evaluating immutable room metadata on every move.
+      allow update: if signedIn() && (
+        (request.auth.uid in resource.data.participants && request.resource.data.updatedAt == request.time
+          && (arcadeMove(resource.data,request.resource.data) || arcadeOtherAction(resource.data,request.resource.data)))
+        || (resource.data.mode == 'random' && resource.data.status == 'waiting' && resource.data.player2Id == ''
+          && request.auth.uid != resource.data.player1Id && resource.data.heartbeatAt >= request.time-duration.value(90,'s')
+          && request.resource.data.status == 'playing' && request.resource.data.player2Id == request.auth.uid
+          && request.resource.data.player2Name is string && request.resource.data.player2Name.size() >= 1 && request.resource.data.player2Name.size() <= 80
+          && request.resource.data.participants == [resource.data.player1Id,request.auth.uid] && notBlocked(request.resource.data)
+          && request.resource.data.updatedAt == request.time && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','player2Id','player2Name','participants','updatedAt']))
+        || (resource.data.status == 'waiting' && resource.data.player1Id == request.auth.uid
+          && request.resource.data.heartbeatAt == request.time && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartbeatAt']))
+      );
+      allow delete: if signedIn() && request.auth.uid in resource.data.participants;
+    }
+    match /arcadeRooms/{id}/messages/{messageId} {
+      allow read: if arcadeMember(id);
+      allow create: if arcadeMember(id) && arcadeRoom(id).status in ['playing','finished'] && notBlocked(arcadeRoom(id))
+        && request.resource.data.keys().hasOnly(['senderId','senderName','text','createdAt'])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.senderName is string && request.resource.data.senderName.size() >= 1 && request.resource.data.senderName.size() <= 80
+        && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 500
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if arcadeMember(id);
+    }
+
+    // Community upgrade: private date polls, opt-in discovery alerts and public replies.
+    function acceptedConnection(id) {
+      let c = connection(id);
+      return signedIn() && request.auth.uid in c.participants && c.status == 'accepted' && notBlocked(c);
+    }
+    function pollMember(id) {
+      let p = get(/databases/$(database)/documents/meetingPolls/$(id)).data;
+      return signedIn() && request.auth.uid in p.participants && acceptedConnection(p.connectionId);
+    }
+    function validPollSlot(value) {
+      return value is string && value.size() >= 20 && value.size() <= 30
+        && value.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{3})?Z');
+    }
+    match /meetingPolls/{pollId} {
+      allow read: if acceptedConnection(resource.data.connectionId);
+      allow create: if signedIn() && acceptedConnection(request.resource.data.connectionId)
+        && request.resource.data.keys().hasOnly(['connectionId','participants','creatorId','activity','place','options','status','selectedSlot','createdAt','updatedAt'])
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.participants == connection(request.resource.data.connectionId).participants
+        && request.resource.data.activity is string && request.resource.data.activity.size() >= 2 && request.resource.data.activity.size() <= 120
+        && request.resource.data.place is string && request.resource.data.place.size() >= 2 && request.resource.data.place.size() <= 160
+        && request.resource.data.options is list && request.resource.data.options.size() >= 1 && request.resource.data.options.size() <= 3
+        && validPollSlot(request.resource.data.options[0])
+        && (request.resource.data.options.size() < 2 || validPollSlot(request.resource.data.options[1]))
+        && (request.resource.data.options.size() < 3 || validPollSlot(request.resource.data.options[2]))
+        && request.resource.data.options.toSet().size() == request.resource.data.options.size()
+        && request.resource.data.status == 'open' && request.resource.data.selectedSlot == -1
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+      allow update: if pollMember(pollId) && resource.data.creatorId == request.auth.uid
+        && resource.data.status == 'open' && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','selectedSlot','updatedAt'])
+        && ((request.resource.data.status == 'cancelled' && request.resource.data.selectedSlot == -1)
+          || (request.resource.data.status == 'confirmed'
+            && request.resource.data.selectedSlot is int && request.resource.data.selectedSlot >= 0 && request.resource.data.selectedSlot < resource.data.options.size()
+            && request.resource.data.selectedSlot in get(/databases/$(database)/documents/meetingPolls/$(pollId)/votes/$(resource.data.participants[0])).data.choices
+            && request.resource.data.selectedSlot in get(/databases/$(database)/documents/meetingPolls/$(pollId)/votes/$(resource.data.participants[1])).data.choices));
+      allow delete: if signedIn() && request.auth.uid in resource.data.participants;
+    }
+    match /meetingPolls/{pollId}/votes/{uid} {
+      allow read: if pollMember(pollId);
+      allow create, update: if owner(uid) && pollMember(pollId)
+        && get(/databases/$(database)/documents/meetingPolls/$(pollId)).data.status == 'open'
+        && request.resource.data.keys().hasOnly(['userId','choices','updatedAt'])
+        && request.resource.data.userId == uid && request.resource.data.updatedAt == request.time
+        && request.resource.data.choices is list && request.resource.data.choices.size() <= 3
+        && request.resource.data.choices.toSet().size() == request.resource.data.choices.size()
+        && request.resource.data.choices.hasOnly([0,1,2])
+        && (get(/databases/$(database)/documents/meetingPolls/$(pollId)).data.options.size() >= 3 || !request.resource.data.choices.hasAny([2]))
+        && (get(/databases/$(database)/documents/meetingPolls/$(pollId)).data.options.size() >= 2 || !request.resource.data.choices.hasAny([1]));
+      allow delete: if owner(uid);
+    }
+    match /discoveryAlerts/{uid} {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly(['userId','enabled','city','language','interest','seenIds','createdAt','updatedAt'])
+        && request.resource.data.userId == uid && request.resource.data.enabled is bool
+        && request.resource.data.city is string && request.resource.data.city.size() <= 80
+        && request.resource.data.language is string && request.resource.data.language.size() <= 80
+        && request.resource.data.interest is string && request.resource.data.interest.size() <= 80
+        && request.resource.data.seenIds is list && request.resource.data.seenIds.size() <= 250
+        && request.resource.data.createdAt is timestamp && request.resource.data.updatedAt == request.time;
+    }
+    match /forumPosts/{postId}/replies/{replyId} {
+      allow read: if (get(/databases/$(database)/documents/forumPosts/$(postId)).data.status == 'visible' && resource.data.status == 'visible') || moderator();
+      allow create: if signedIn() && adultCommunityMember(request.auth.uid)
+        && get(/databases/$(database)/documents/forumPosts/$(postId)).data.status == 'visible'
+        && request.resource.data.keys().hasOnly(['authorId','authorName','text','status','adultConfirmed','createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string && request.resource.data.authorName.size() >= 1 && request.resource.data.authorName.size() <= 50
+        && request.resource.data.text is string && request.resource.data.text.size() >= 2 && request.resource.data.text.size() <= 1200
+        && request.resource.data.adultConfirmed == true && request.resource.data.status == 'visible' && request.resource.data.createdAt == request.time;
+      allow update: if moderator() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && request.resource.data.status in ['visible','hidden','removed'];
+      allow delete: if moderator() || (signedIn() && resource.data.authorId == request.auth.uid);
+    }
+
   }
 }

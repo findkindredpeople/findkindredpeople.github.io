@@ -93,7 +93,7 @@ export async function flushKindredPushOutbox(user, options = {}) {
 export async function sendKindredPush(user, payload, options = {}) {
   if (!user?.uid) return {accepted:false};
   const clean = Object.fromEntries(Object.entries(payload).filter(([key,value]) =>
-    ['type','connectionId','groupId','meetupId','messageId','roomId','roomCollection','recipientId'].includes(key) && typeof value === 'string'));
+    ['type','connectionId','groupId','meetupId','messageId','roomId','roomCollection','recipientId','pollId','postId','replyId'].includes(key) && typeof value === 'string'));
   const id = user.uid + ':' + (globalThis.crypto?.randomUUID?.() || Date.now()+':'+Math.random());
   const store = options.store || pushOutbox;
   await store.put({id,uid:user.uid,payload:clean,createdAt:Date.now()});
