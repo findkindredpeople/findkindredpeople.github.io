@@ -850,10 +850,13 @@ service cloud.firestore {
     function checkersOutcome(o,n,id) {
       let a = o.state;
       let b = n.state;
-      let chain = b.lastCaptured >= 0 && !checkersPromotes(a,b) && checkersCapture(b.board,b.kings,b.lastMove,a.turn);
+      let chain = b.forcedFrom >= 0;
       // Every claimed win is proved against the opponent's legal moves. A
       // regular non-winning move avoids scanning the other side unnecessarily.
       return b.forcedFrom == (chain ? b.lastMove : -1)
+        && (chain
+          ? (b.lastCaptured >= 0 && !checkersPromotes(a,b) && checkersCapture(b.board,b.kings,b.lastMove,a.turn))
+          : (!(b.lastCaptured >= 0 && !checkersPromotes(a,b)) || !checkersCapture(b.board,b.kings,b.lastMove,a.turn)))
         && (chain ? b.winner == 0 : (b.winner == a.turn
           ? checkersProofs(id,'b',o.round,b.moveCount,a.turn == 1 ? b.tokens2.size() : b.tokens1.size())
           : b.winner == (b.quietMoves >= 80 ? 3 : 0)))
