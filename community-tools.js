@@ -77,7 +77,7 @@ export async function toggleDiscoveryAlert(criteria,knownIds=[]) {
 }
 export function mountForumReplies(host,post,userGetter,language='en') {
   const {auth,db}=context(),c=communityCopy(language);let stop=()=>{},opened=false;
-  host.className='community-tools';host.innerHTML=`<details><summary>${safe(c.replies)}</summary><div data-replies></div><form><label>${safe(c.reply)}<textarea name="reply" rows="2" maxlength="1200" minlength="2" required></textarea></label><label><input name="adult" type="checkbox" required>18+</label><button>${safe(c.send)}</button><p role="status"></p></form></details>`;
+  host.className='community-tools';host.innerHTML=`<details><summary>${safe(c.replies)}</summary><div data-replies></div><form><label>${safe(c.reply)}<textarea name="reply" rows="2" maxlength="1200" minlength="2" required></textarea></label><label><input name="adult" type="checkbox" required>I confirm that I am at least 18 years old.</label><button>${safe(c.send)}</button><p role="status"></p></form></details>`;
   const details=host.querySelector('details'),list=host.querySelector('[data-replies]'),form=host.querySelector('form'),status=host.querySelector('[role=status]');
   details.ontoggle=()=>{if(!details.open||opened)return;opened=true;stop=onSnapshot(query(collection(db,'forumPosts',post.id,'replies'),where('status','==','visible'),limit(100)),snap=>{
       list.innerHTML='';const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));

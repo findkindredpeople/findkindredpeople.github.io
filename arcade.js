@@ -17,7 +17,7 @@ $('#gameSignIn').onclick=async()=>{try{if(user)await signOut(auth);else await si
 function renderLobby(){const c=copy();$('#gameTitle').textContent=c.lobby;$('#openRoomsTitle').textContent=c.openRooms;$('#ownRoomsTitle').textContent=c.yourRooms;
  $('#gameCreate').innerHTML=Object.entries(gameTypes).map(([type,g])=>`<button data-create="${type}">${safe(c.createGame)} · ${safe(g.name)}</button>`).join('');
  document.querySelectorAll('[data-create]').forEach(b=>{b.disabled=!user||busy;b.onclick=()=>createRoom(b.dataset.create);});
- const visible=rooms.filter(available);$('#gameRooms').innerHTML=visible.length?visible.map(r=>`<div class="room-row"><span>${safe(r.player1Name)} · ${safe(gameTypes[r.gameType]?.name)}</span><button data-join="${safe(r.id)}">${safe(c.join)}</button></div>`).join(''):`<p>${safe(c.noRooms)}</p>`;
+ const visible=rooms.filter(available);$('#gameRooms').innerHTML=visible.length?visible.map(r=>`<div class="room-row"><span>${safe(r.player1Name)} · ${safe(gameTypes[r.gameType]?.name)}</span><button data-join="${safe(r.id)}">${safe(c.join)}</button></div>`).join(''):`<p>${safe(user?c.noRooms:c.signin)}</p>`;
  document.querySelectorAll('[data-join]').forEach(b=>{b.disabled=!user||busy||!live;b.onclick=()=>joinRoom(b.dataset.join);});
  $('#ownGameRooms').innerHTML=own.filter(r=>['waiting','playing','invited','finished'].includes(r.status)).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)).slice(0,15).map(r=>`<div class="room-row"><span>${safe(gameTypes[r.gameType]?.name)} · ${safe(r.status)}</span><button data-open="${safe(r.id)}">Open</button></div>`).join('');
  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openRoom(b.dataset.open));

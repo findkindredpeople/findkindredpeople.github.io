@@ -31,5 +31,4 @@ jobs:
           java-version: '25'
       - run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: tests/firestore
-      - run: npx firebase emulators:exec --only firestore --project demo-kindred-arcade 'npm test'
-        working-directory: tests/firestore
+      - run: tests/firestore/node_modules/.bin/firebase emulators:exec --config firebase.tests.json --only firestore --project demo-kindred-arcade 'npm --prefix tests/firestore test'
