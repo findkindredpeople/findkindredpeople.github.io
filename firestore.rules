@@ -822,11 +822,14 @@ service cloud.firestore {
       let a = o.state;
       let b = n.state;
       let chain = b.lastCaptured >= 0 && !checkersPromotes(a,b) && checkersCapture(b.board,b.kings,b.lastMove,a.turn);
-      let otherCanPlay = chain || checkersAny(b.board,b.kings,a.turn == 1 ? b.tokens2 : b.tokens1,3-a.turn,false);
-      let winner = chain ? 0 : (!otherCanPlay ? a.turn : (b.quietMoves >= 80 ? 3 : 0));
-      return b.forcedFrom == (chain ? b.lastMove : -1) && b.winner == winner
-        && b.turn == (chain || winner != 0 ? a.turn : 3-a.turn)
-        && n.status == (winner == 0 ? 'playing' : 'finished');
+      // Every claimed win is proved against the opponent's legal moves. A
+      // regular non-winning move avoids scanning the other side unnecessarily.
+      return b.forcedFrom == (chain ? b.lastMove : -1)
+        && (chain ? b.winner == 0 : (b.winner == a.turn
+          ? !checkersAny(b.board,b.kings,a.turn == 1 ? b.tokens2 : b.tokens1,3-a.turn,false)
+          : b.winner == (b.quietMoves >= 80 ? 3 : 0)))
+        && b.turn == (chain || b.winner != 0 ? a.turn : 3-a.turn)
+        && n.status == (b.winner == 0 ? 'playing' : 'finished');
     }
     function checkersMove(o,n) {
       return checkersGeometry(o.state,n.state) && checkersBoardUpdate(o.state,n.state)

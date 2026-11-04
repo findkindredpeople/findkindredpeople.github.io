@@ -1,4 +1,4 @@
-import {initialPosition} from './arcade-logic.mjs';
+import {initialPosition} from './arcade-logic.mjs?v=20261104-games-1';
 
 export const seriesTarget = room => room.seriesTarget===3?3:1;
 export const seriesWinner = room => seriesTarget(room)===3 ? ((room.wins1||0)>=3?1:(room.wins2||0)>=3?2:0) : 0;
