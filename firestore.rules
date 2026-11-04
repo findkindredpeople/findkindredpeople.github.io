@@ -793,7 +793,10 @@ service cloud.firestore {
         && request.auth.uid == (before.state.turn == 1 ? before.player1Id : before.player2Id)
         && ((key == 'm' && group == -1 && notBlocked(before) && after.round == before.round
             && after.state.moveCount == before.state.moveCount+1 && d.stamp == checkersStamp(after.round,after.state.moveCount)
-            && checkersBoardUpdate(before.state,after.state) && checkersMetadata(before.state,after.state))
+            && checkersBoardUpdate(before.state,after.state))
+          || (key == 'k' && group == -2 && after.round == before.round
+            && after.state.moveCount == before.state.moveCount+1 && d.stamp == checkersStamp(after.round,after.state.moveCount)
+            && checkersMetadata(before.state,after.state))
           || (group >= 0 && group <= 3 && ((key == 'c'+string(group) && d.stamp == checkersStamp(before.round,before.state.moveCount)
             && !checkersGroupCanAct(before.state,before.state.turn,group,false))
           || (key == 'b'+string(group) && after.status == 'finished' && after.state.winner == before.state.turn
@@ -860,6 +863,7 @@ service cloud.firestore {
     function checkersMove(o,n,id) {
       return checkersGeometry(o.state,n.state,id,o.round)
         && getAfter(/databases/$(database)/documents/arcadeRooms/$(id)/checkersProofs/m).data.stamp == checkersStamp(o.round,n.state.moveCount)
+        && getAfter(/databases/$(database)/documents/arcadeRooms/$(id)/checkersProofs/k).data.stamp == checkersStamp(o.round,n.state.moveCount)
         && checkersOutcome(o,n,id);
     }
     function checkersInitial(s) {
