@@ -776,7 +776,7 @@ service cloud.firestore {
         || (tokens.size() > 11 && checkersCanAct(board,kings,tokens[11],me,capturesOnly));
     }
     function checkersDiagonal(f,t,distance) {
-      return (int(t/8) == int(f/8)+distance || int(t/8) == int(f/8)-distance)
+      return (int(t / 8) == int(f / 8)+distance || int(t / 8) == int(f / 8)-distance)
         && (t%8 == f%8+distance || t%8 == f%8-distance);
     }
     function checkersGeometry(a,b) {
@@ -786,7 +786,7 @@ service cloud.firestore {
       return f is int && t is int && f >= 0 && f < 64 && t >= 0 && t < 64
         && a.board.get(string(f),0) == a.turn && a.board.get(string(t),0) == 0
         && (f in a.kings || (a.turn == 1 ? t < f : t > f))
-        && (capture ? (checkersDiagonal(f,t,2) && b.lastCaptured == int((f+t)/2)
+        && (capture ? (checkersDiagonal(f,t,2) && b.lastCaptured == int((f+t) / 2)
             && a.board.get(string(b.lastCaptured),0) == 3-a.turn) : checkersDiagonal(f,t,1))
         && (a.forcedFrom >= 0 ? (capture && f == a.forcedFrom)
           : (capture || !checkersAny(a.board,a.kings,a.turn == 1 ? a.tokens1 : a.tokens2,a.turn,true)));
