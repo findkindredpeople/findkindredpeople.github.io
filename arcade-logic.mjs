@@ -1,6 +1,9 @@
 import {initialCheckers,checkersMove} from './checkers-logic.mjs';
 export const gameTypes={tic_tac_toe:{rows:3,columns:3,name:'Tic-tac-toe'},connect_four:{rows:6,columns:7,name:'Connect Four'},memory:{rows:4,columns:4,name:'Memory'},checkers:{rows:8,columns:8,name:'Checkers 8×8'}};
+export const baseGameType=type=>typeof type==='string'?type.replace(/_series$/,''):'';
+export const wireGameType=(type,target=1)=>baseGameType(type)+(target===3?'_series':'');
 export function initialPosition(type,random=Math.random,starter=1){
+ type=baseGameType(type);
  if(!gameTypes[type]||![1,2].includes(starter))throw Error('Invalid game');
  const deck=type==='memory'?Array.from({length:16},(_,i)=>i%8):[];
  for(let i=deck.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
@@ -9,6 +12,7 @@ export function initialPosition(type,random=Math.random,starter=1){
  return p;
 }
 export function move(type,previous,selection){
+ type=baseGameType(type);
  if(type==='checkers')return checkersMove(previous,selection);
  const p=structuredClone(previous),g=gameTypes[type];if(!g||p.winner||![1,2].includes(p.turn)||!Number.isInteger(selection))throw Error('Invalid move');
  if(type==='memory'){

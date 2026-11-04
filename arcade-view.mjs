@@ -1,8 +1,9 @@
-import {gameTypes} from './arcade-logic.mjs?v=20261104-games-1';
+import {gameTypes,baseGameType} from './arcade-logic.mjs?v=20261104-games-1';
 import {checkersMoves} from './checkers-logic.mjs';
 import {escapeHtml as safe} from './arcade-copy.mjs';
 
 export function boardView(type,p,{me=1,enabled=false,selected=-1,copy:c}={}) {
+  type=baseGameType(type);
   const g=gameTypes[type];if(!g)return '';
   const checkers=type==='checkers',legal=checkers?checkersMoves(p):[],destinations=legal.filter(m=>m.from===selected).map(m=>m.to);
   return `<div class="arcade-board${checkers?' checkers-board':''}" style="grid-template-columns:repeat(${g.columns},1fr)">${Array.from({length:g.rows*g.columns},(_,visual)=>{

@@ -707,7 +707,7 @@ service cloud.firestore {
     function arcadeMember(id) { return signedIn() && request.auth.uid in arcadeRoom(id).participants; }
     function arcadeShape(d) {
       return d.keys().hasOnly(['gameType','mode','status','player1Id','player1Name','player2Id','player2Name','participants','connectionId','state','rematchRequestedBy','round','createdAt','updatedAt','heartbeatAt','seriesTarget','wins1','wins2','seriesRound'])
-        && d.gameType in ['tic_tac_toe','connect_four','memory','checkers'] && d.mode in ['random','invite']
+        && d.gameType in ['tic_tac_toe','connect_four','memory','checkers','tic_tac_toe_series','connect_four_series','memory_series','checkers_series'] && d.mode in ['random','invite']
         && d.status in ['waiting','invited','playing','finished','cancelled','declined']
         && d.player1Id is string && d.player1Id.size() >= 1 && d.player1Id.size() <= 128
         && d.player2Id is string && d.player2Id.size() <= 128
@@ -717,7 +717,7 @@ service cloud.firestore {
         && d.connectionId is string && d.connectionId.size() <= 256
         && d.rematchRequestedBy is string && d.round is int && d.round >= 1 && arcadeSeriesShape(d)
         && d.createdAt is timestamp && d.updatedAt is timestamp && d.heartbeatAt is timestamp
-        && d.state is map && d.state.keys().hasOnly(['board','tokens1','tokens2','deck','matched','firstCard','secondCard','score1','score2','turn','winner','lastMove','moveCount'].concat(d.gameType == 'checkers' ? ['kings','forcedFrom','quietMoves','lastFrom','lastCaptured'] : []))
+        && d.state is map && d.state.keys().hasOnly(['board','tokens1','tokens2','deck','matched','firstCard','secondCard','score1','score2','turn','winner','lastMove','moveCount'].concat(d.gameType in ['checkers','checkers_series'] ? ['kings','forcedFrom','quietMoves','lastFrom','lastCaptured'] : []))
         && d.state.board is map && d.state.tokens1 is list && d.state.tokens2 is list && d.state.deck is list && d.state.matched is list
         && d.state.firstCard is int && d.state.secondCard is int
         && d.state.score1 is int && d.state.score2 is int
@@ -726,8 +726,8 @@ service cloud.firestore {
     }
     // Optional first-to-three series. Legacy single rounds keep their original shape.
     function arcadeSeriesShape(d) {
-      return (d.get('seriesTarget',1) == 1 && !d.keys().hasAny(['seriesTarget','wins1','wins2','seriesRound']))
-        || (d.seriesTarget == 3 && d.wins1 is int && d.wins2 is int && d.seriesRound is int
+      return (d.get('seriesTarget',1) == 1 && !(d.gameType in ['tic_tac_toe_series','connect_four_series','memory_series','checkers_series']) && !d.keys().hasAny(['seriesTarget','wins1','wins2','seriesRound']))
+        || (d.seriesTarget == 3 && d.gameType in ['tic_tac_toe_series','connect_four_series','memory_series','checkers_series'] && d.wins1 is int && d.wins2 is int && d.seriesRound is int
           && d.wins1 >= 0 && d.wins1 <= 3 && d.wins2 >= 0 && d.wins2 <= 3 && d.seriesRound >= 1);
     }
     function arcadeSeriesAward(o,n) {
@@ -762,46 +762,47 @@ service cloud.firestore {
         || ((me == 2 || c in kings) && c < 56
           && ((c % 8 >= 1 && board.get(string(c+7),0) == 0) || (c % 8 <= 6 && board.get(string(c+9),0) == 0)));
     }
-    function checkersAnyForward(board,tokens,me) {
-      return (tokens.size() > 0 ? checkersForwardCapture(board,tokens[0],me) : false)
-        || (tokens.size() > 1 ? checkersForwardCapture(board,tokens[1],me) : false)
-        || (tokens.size() > 2 ? checkersForwardCapture(board,tokens[2],me) : false)
-        || (tokens.size() > 3 ? checkersForwardCapture(board,tokens[3],me) : false)
-        || (tokens.size() > 4 ? checkersForwardCapture(board,tokens[4],me) : false)
-        || (tokens.size() > 5 ? checkersForwardCapture(board,tokens[5],me) : false)
-        || (tokens.size() > 6 ? checkersForwardCapture(board,tokens[6],me) : false)
-        || (tokens.size() > 7 ? checkersForwardCapture(board,tokens[7],me) : false)
-        || (tokens.size() > 8 ? checkersForwardCapture(board,tokens[8],me) : false)
-        || (tokens.size() > 9 ? checkersForwardCapture(board,tokens[9],me) : false)
-        || (tokens.size() > 10 ? checkersForwardCapture(board,tokens[10],me) : false)
-        || (tokens.size() > 11 ? checkersForwardCapture(board,tokens[11],me) : false);
+    // A bounded proof checks three pieces. Proofs and the move are atomic.
+    function checkersGroupPiece(s,cell,side,blocked) {
+      return (blocked ? checkersStep(s.board,s.kings,cell,side) : false)
+        || checkersCapture(s.board,s.kings,cell,side);
     }
-    function checkersAnyStep(board,kings,tokens,me) {
-      return (tokens.size() > 0 ? checkersStep(board,kings,tokens[0],me) : false)
-        || (tokens.size() > 1 ? checkersStep(board,kings,tokens[1],me) : false)
-        || (tokens.size() > 2 ? checkersStep(board,kings,tokens[2],me) : false)
-        || (tokens.size() > 3 ? checkersStep(board,kings,tokens[3],me) : false)
-        || (tokens.size() > 4 ? checkersStep(board,kings,tokens[4],me) : false)
-        || (tokens.size() > 5 ? checkersStep(board,kings,tokens[5],me) : false)
-        || (tokens.size() > 6 ? checkersStep(board,kings,tokens[6],me) : false)
-        || (tokens.size() > 7 ? checkersStep(board,kings,tokens[7],me) : false)
-        || (tokens.size() > 8 ? checkersStep(board,kings,tokens[8],me) : false)
-        || (tokens.size() > 9 ? checkersStep(board,kings,tokens[9],me) : false)
-        || (tokens.size() > 10 ? checkersStep(board,kings,tokens[10],me) : false)
-        || (tokens.size() > 11 ? checkersStep(board,kings,tokens[11],me) : false);
+    function checkersGroupCanAct(s,side,group,blocked) {
+      let tokens = side == 1 ? s.tokens1 : s.tokens2;
+      let i = group*3;
+      return (tokens.size() > i ? checkersGroupPiece(s,tokens[i],side,blocked) : false)
+        || (tokens.size() > i+1 ? checkersGroupPiece(s,tokens[i+1],side,blocked) : false)
+        || (tokens.size() > i+2 ? checkersGroupPiece(s,tokens[i+2],side,blocked) : false);
     }
-    function checkersAnyCapture(board,kings,tokens,me) {
-      return checkersAnyForward(board,tokens,me)
-        || checkersAnyForward(board,kings.removeAll(kings.removeAll(tokens)),3-me);
+    function checkersStamp(round,moves) { return string(round)+':'+string(moves); }
+    function checkersProofGroup(id,prefix,stamp,group,count) {
+      return count <= group*3 ? true
+        : getAfter(/databases/$(database)/documents/arcadeRooms/$(id)/checkersProofs/$(prefix+string(group))).data.stamp == stamp;
     }
-    function checkersAnyMove(board,kings,tokens,me) {
-      return checkersAnyStep(board,kings,tokens,me) || checkersAnyCapture(board,kings,tokens,me);
+    function checkersProofs(id,prefix,round,moves,count) {
+      let stamp = checkersStamp(round,moves);
+      return checkersProofGroup(id,prefix,stamp,0,count) && checkersProofGroup(id,prefix,stamp,1,count)
+        && checkersProofGroup(id,prefix,stamp,2,count) && checkersProofGroup(id,prefix,stamp,3,count);
+    }
+    function checkersProofWrite(id,key,d) {
+      let before = arcadeRoom(id);
+      let after = getAfter(/databases/$(database)/documents/arcadeRooms/$(id)).data;
+      let group = d.group;
+      return d.keys().hasOnly(['group','stamp']) && group is int && group >= 0 && group <= 3 && d.stamp is string
+        && before.gameType in ['checkers','checkers_series'] && before.status == 'playing' && before.state.winner == 0
+        && request.auth.uid == (before.state.turn == 1 ? before.player1Id : before.player2Id)
+        && ((key == 'c'+string(group) && d.stamp == checkersStamp(before.round,before.state.moveCount)
+            && !checkersGroupCanAct(before.state,before.state.turn,group,false))
+          || (key == 'b'+string(group) && after.status == 'finished' && after.state.winner == before.state.turn
+            && after.round == before.round && after.state.moveCount == before.state.moveCount+1
+            && d.stamp == checkersStamp(after.round,after.state.moveCount)
+            && !checkersGroupCanAct(after.state,3-before.state.turn,group,true)));
     }
     function checkersDiagonal(f,t,distance) {
       return (int(t / 8) == int(f / 8)+distance || int(t / 8) == int(f / 8)-distance)
         && (t%8 == f%8+distance || t%8 == f%8-distance);
     }
-    function checkersGeometry(a,b) {
+    function checkersGeometry(a,b,id,round) {
       let f = b.lastFrom;
       let t = b.lastMove;
       let capture = b.lastCaptured >= 0;
@@ -811,7 +812,7 @@ service cloud.firestore {
         && (capture ? (checkersDiagonal(f,t,2) && b.lastCaptured == int((f+t) / 2)
             && a.board.get(string(b.lastCaptured),0) == 3-a.turn) : checkersDiagonal(f,t,1))
         && (a.forcedFrom >= 0 ? (capture && f == a.forcedFrom)
-          : (capture || !checkersAnyCapture(a.board,a.kings,a.turn == 1 ? a.tokens1 : a.tokens2,a.turn)));
+          : (capture || checkersProofs(id,'c',round,a.moveCount,a.turn == 1 ? a.tokens1.size() : a.tokens2.size())));
     }
     function checkersBoardUpdate(a,b) {
       let f = b.lastFrom;
@@ -840,7 +841,7 @@ service cloud.firestore {
         && b.moveCount == a.moveCount+1
         && b.diff(a).affectedKeys().hasOnly(['board','tokens1','tokens2','kings','forcedFrom','quietMoves','lastFrom','lastCaptured','lastMove','moveCount','turn','winner']);
     }
-    function checkersOutcome(o,n) {
+    function checkersOutcome(o,n,id) {
       let a = o.state;
       let b = n.state;
       let chain = b.lastCaptured >= 0 && !checkersPromotes(a,b) && checkersCapture(b.board,b.kings,b.lastMove,a.turn);
@@ -848,26 +849,26 @@ service cloud.firestore {
       // regular non-winning move avoids scanning the other side unnecessarily.
       return b.forcedFrom == (chain ? b.lastMove : -1)
         && (chain ? b.winner == 0 : (b.winner == a.turn
-          ? !checkersAnyMove(b.board,b.kings,a.turn == 1 ? b.tokens2 : b.tokens1,3-a.turn)
+          ? checkersProofs(id,'b',o.round,b.moveCount,a.turn == 1 ? b.tokens2.size() : b.tokens1.size())
           : b.winner == (b.quietMoves >= 80 ? 3 : 0)))
         && b.turn == (chain || b.winner != 0 ? a.turn : 3-a.turn)
         && n.status == (b.winner == 0 ? 'playing' : 'finished');
     }
-    function checkersMove(o,n) {
-      return checkersGeometry(o.state,n.state) && checkersBoardUpdate(o.state,n.state)
-        && checkersMetadata(o.state,n.state) && checkersOutcome(o,n);
+    function checkersMove(o,n,id) {
+      return checkersGeometry(o.state,n.state,id,o.round) && checkersBoardUpdate(o.state,n.state)
+        && checkersMetadata(o.state,n.state) && checkersOutcome(o,n,id);
     }
     function checkersInitial(s) {
       return s.board == {'1': 2, '3': 2, '5': 2, '7': 2, '8': 2, '10': 2, '12': 2, '14': 2, '17': 2, '19': 2, '21': 2, '23': 2, '40': 1, '42': 1, '44': 1, '46': 1, '49': 1, '51': 1, '53': 1, '55': 1, '56': 1, '58': 1, '60': 1, '62': 1} && s.tokens1 == [40, 42, 44, 46, 49, 51, 53, 55, 56, 58, 60, 62] && s.tokens2 == [1, 3, 5, 7, 8, 10, 12, 14, 17, 19, 21, 23]
         && s.kings == [] && s.forcedFrom == -1 && s.quietMoves == 0 && s.lastFrom == -1 && s.lastCaptured == -1;
     }
     function arcadeInitial(d) {
-      return (d.gameType == 'checkers' ? checkersInitial(d.state) : (d.state.board == {} && d.state.tokens1 == [] && d.state.tokens2 == [])) && d.state.matched == []
+      return (d.gameType in ['checkers','checkers_series'] ? checkersInitial(d.state) : (d.state.board == {} && d.state.tokens1 == [] && d.state.tokens2 == [])) && d.state.matched == []
         && d.state.firstCard == -1 && d.state.secondCard == -1
         && d.state.score1 == 0 && d.state.score2 == 0
         && d.state.turn == (d.get('seriesTarget',1) == 3 && d.round % 2 == 0 ? 2 : 1) && d.state.winner == 0 && d.state.lastMove == -1 && d.state.moveCount == 0
-        && ((d.gameType != 'memory' && d.state.deck == [])
-          || (d.gameType == 'memory' && d.state.deck.size() == 16
+        && ((!(d.gameType in ['memory','memory_series']) && d.state.deck == [])
+          || (d.gameType in ['memory','memory_series'] && d.state.deck.size() == 16
             && d.state.deck.hasOnly([0,1,2,3,4,5,6,7])
             && d.state.deck.removeAll([0]).size() == 14 && d.state.deck.removeAll([1]).size() == 14
             && d.state.deck.removeAll([2]).size() == 14 && d.state.deck.removeAll([3]).size() == 14
@@ -909,9 +910,9 @@ service cloud.firestore {
     function arcadeBoardMove(o,n) {
       let a = o.state;
       let b = n.state;
-      let limit = o.gameType == 'tic_tac_toe' ? 9 : 42;
+      let limit = o.gameType in ['tic_tac_toe','tic_tac_toe_series'] ? 9 : 42;
       let cells = a.turn == 1 ? b.tokens1 : b.tokens2;
-      let won = o.gameType == 'tic_tac_toe' ? arcadeTicWin(cells) : (cells.size() >= 4 && arcadeFourWin(cells,b.lastMove));
+      let won = o.gameType in ['tic_tac_toe','tic_tac_toe_series'] ? arcadeTicWin(cells) : (cells.size() >= 4 && arcadeFourWin(cells,b.lastMove));
       let result = won ? a.turn : (b.board.size() == limit ? 3 : 0);
       return b.board is map && b.tokens1 is list && b.tokens2 is list && b.lastMove is int && b.moveCount is int
         && b.turn is int && b.winner is int
@@ -921,7 +922,7 @@ service cloud.firestore {
         && b.board.size() == a.board.size()+1
         && b.board.diff(a.board).affectedKeys().hasOnly([string(b.lastMove)])
         && b.board[string(b.lastMove)] == a.turn
-        && (o.gameType != 'connect_four' || b.lastMove >= 35 || a.board.get(string(b.lastMove+7),0) in [1,2])
+        && (!(o.gameType in ['connect_four','connect_four_series']) || b.lastMove >= 35 || a.board.get(string(b.lastMove+7),0) in [1,2])
         && b.moveCount == a.moveCount+1 && b.winner == result
         && b.turn == (result == 0 ? 3-a.turn : a.turn)
         && n.status == (result == 0 ? 'playing' : 'finished');
@@ -957,11 +958,11 @@ service cloud.firestore {
                   && b.secondCard == b.lastMove && b.moveCount == a.moveCount+1
                   && b.diff(a).affectedKeys().hasOnly(['secondCard','lastMove','moveCount']) && n.status == 'playing'))))));
     }
-    function arcadeMove(o,n) {
+    function arcadeMove(o,n,id) {
       return o.status == 'playing' && o.state.winner == 0 && notBlocked(o)
         && request.auth.uid == (o.state.turn == 1 ? o.player1Id : o.player2Id)
         && n.diff(o).affectedKeys().hasOnly(['state','status','updatedAt','wins1','wins2']) && arcadeSeriesAward(o,n)
-        && (o.gameType == 'memory' ? arcadeMemoryMove(o,n) : (o.gameType == 'checkers' ? checkersMove(o,n) : arcadeBoardMove(o,n)));
+        && (o.gameType in ['memory','memory_series'] ? arcadeMemoryMove(o,n) : (o.gameType in ['checkers','checkers_series'] ? checkersMove(o,n,id) : arcadeBoardMove(o,n)));
     }
     function arcadeOtherAction(o,n) {
       let me = request.auth.uid == o.player1Id ? 1 : 2;
@@ -994,7 +995,7 @@ service cloud.firestore {
       // Avoid re-evaluating immutable room metadata on every move.
       allow update: if signedIn() && (
         (request.auth.uid in resource.data.participants && request.resource.data.updatedAt == request.time
-          && (arcadeMove(resource.data,request.resource.data) || arcadeOtherAction(resource.data,request.resource.data)))
+          && (arcadeMove(resource.data,request.resource.data,id) || arcadeOtherAction(resource.data,request.resource.data)))
         || (resource.data.mode == 'random' && resource.data.status == 'waiting' && resource.data.player2Id == ''
           && request.auth.uid != resource.data.player1Id && resource.data.heartbeatAt >= request.time-duration.value(90,'s')
           && request.resource.data.status == 'playing' && request.resource.data.player2Id == request.auth.uid
@@ -1005,6 +1006,11 @@ service cloud.firestore {
           && request.resource.data.heartbeatAt == request.time && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartbeatAt']))
       );
       allow delete: if signedIn() && request.auth.uid in resource.data.participants;
+    }
+    match /arcadeRooms/{id}/checkersProofs/{proofId} {
+      allow read: if arcadeMember(id);
+      allow create, update: if signedIn() && checkersProofWrite(id,proofId,request.resource.data);
+      allow delete: if arcadeMember(id);
     }
     match /arcadeRooms/{id}/messages/{messageId} {
       allow read: if arcadeMember(id);

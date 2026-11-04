@@ -2,22 +2,26 @@ import {before,after,beforeEach,test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,updateDoc,serverTimestamp,Timestamp} from 'firebase/firestore';
-import {initialPosition,move as gameMove} from '../../arcade-logic.mjs';
-import {checkersMoves} from '../../checkers-logic.mjs';
+import {doc,setDoc,getDoc,updateDoc,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
+import {initialPosition,move as gameMove,wireGameType,baseGameType} from '../../arcade-logic.mjs';
+import {checkersMoves,checkersProofWrites} from '../../checkers-logic.mjs';
 import {seriesFields,roundScore,nextRound} from '../../arcade-series.mjs';
 let env;
 const db=uid=>env.authenticatedContext(uid).firestore(),ref=uid=>doc(db(uid),'arcadeRooms','game');
-const data=(gameType='checkers',extra={})=>({gameType,mode:'random',status:'playing',player1Id:'alice',player1Name:'Alice',player2Id:'bob',player2Name:'Bob',participants:['alice','bob'],connectionId:'',state:initialPosition(gameType),rematchRequestedBy:'',round:1,createdAt:Timestamp.now(),updatedAt:Timestamp.now(),heartbeatAt:Timestamp.now(),...extra});
+const data=(gameType='checkers',extra={})=>({gameType:wireGameType(gameType,extra.seriesTarget||1),mode:'random',status:'playing',player1Id:'alice',player1Name:'Alice',player2Id:'bob',player2Name:'Bob',participants:['alice','bob'],connectionId:'',state:initialPosition(gameType),rematchRequestedBy:'',round:1,createdAt:Timestamp.now(),updatedAt:Timestamp.now(),heartbeatAt:Timestamp.now(),...extra});
 const tokens=p=>({...p,tokens1:Object.keys(p.board).filter(k=>p.board[k]===1).map(Number).sort((a,b)=>a-b),tokens2:Object.keys(p.board).filter(k=>p.board[k]===2).map(Number).sort((a,b)=>a-b)});
 const checkers=(board,extra={})=>tokens({...initialPosition('checkers'),board,...extra});
 async function seed(room){await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'arcadeRooms','game'),room));return room;}
-const save=(uid,state,extra={})=>updateDoc(ref(uid),{state,status:state.winner?'finished':'playing',updatedAt:serverTimestamp(),...extra});
+const save=async(uid,state,extra={})=>{
+ const client=db(uid),r=doc(client,'arcadeRooms','game'),room=(await getDoc(r)).data(),batch=writeBatch(client);
+ if(baseGameType(room.gameType)==='checkers')for(const proof of checkersProofWrites(room.round,room.state,state))batch.set(doc(client,'arcadeRooms','game','checkersProofs',proof.id),proof.data);
+ batch.update(r,{state,status:state.winner?'finished':'playing',updatedAt:serverTimestamp(),...extra});return batch.commit();
+};
 before(async()=>{env=await initializeTestEnvironment({projectId:'demo-kindred-arcade',firestore:{host:'127.0.0.1',port:8088,rules:await readFile(new URL('../../firestore.rules',import.meta.url),'utf8')}});});
 after(async()=>{if(env)await env.cleanup();});beforeEach(async()=>env.clearFirestore());
 
 test('checkers creation requires the exact initial position and an empty score',async()=>{
-  const r={...data('checkers',{status:'waiting',player2Id:'',player2Name:'',participants:['alice']}),...seriesFields(3),createdAt:serverTimestamp(),updatedAt:serverTimestamp(),heartbeatAt:serverTimestamp()};
+  const r={...data('checkers',{status:'waiting',player2Id:'',player2Name:'',participants:['alice'],...seriesFields(3)}),createdAt:serverTimestamp(),updatedAt:serverTimestamp(),heartbeatAt:serverTimestamp()};
   await assertSucceeds(setDoc(ref('alice'),r));
   await assertFails(setDoc(ref('alice'),{...r,state:{...r.state,kings:[40]}}));
   await assertFails(setDoc(ref('alice'),{...r,wins1:1}));

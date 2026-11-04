@@ -58,3 +58,16 @@ export function checkersMove(previous, selection) {
   p.tokens2=Object.keys(p.board).filter(i=>p.board[i]===2).map(Number).sort((a,b)=>a-b);
   return p;
 }
+export function checkersProofWrites(round,before,after) {
+  if(after.moveCount!==before.moveCount+1)return [];
+  const proofs=[];
+  if(after.lastCaptured<0){
+    const count=Object.values(before.board).filter(value=>value===before.turn).length;
+    for(let group=0;group<Math.ceil(count/3);group++)proofs.push({id:'c'+group,data:{group,stamp:`${round}:${before.moveCount}`}});
+  }
+  if(after.winner===before.turn){
+    const count=Object.values(after.board).filter(value=>value===3-before.turn).length;
+    for(let group=0;group<Math.ceil(count/3);group++)proofs.push({id:'b'+group,data:{group,stamp:`${round}:${after.moveCount}`}});
+  }
+  return proofs;
+}
