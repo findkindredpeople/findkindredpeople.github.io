@@ -10,7 +10,7 @@ import{communityCopy}from'./community-upgrade.mjs';
 import{mountNotificationSettings}from'./community-tools.js';
 const app=initializeApp({apiKey:'AIzaSyDeuW583lgxl08k-DYDju7jQiZP2jVqUk4',authDomain:'kindred-507209.firebaseapp.com',projectId:'kindred-507209',storageBucket:'kindred-507209.firebasestorage.app',messagingSenderId:'459167088901',appId:'1:459167088901:web:c13b3aeaf9d6e41e9cf76c'}),auth=getAuth(app),db=getFirestore(app),$=s=>document.querySelector(s);
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let user=null,language=localStorage.getItem('kindred_language')||'en',rooms=[],own=[],unsubs=[],stopRoom=()=>{},heartbeat,clock,roomId='',currentRoom,busy=false,live=false,stopSettings=()=>{},format=1,selectedChecker=-1,positionKey='',roomLive=false;
+let user=null,language=localStorage.getItem('kindred_language')||'en',rooms=[],own=[],unsubs=[],stopRoom=()=>{},heartbeat,clock,roomId='',currentRoom,busy=false,live=false,stopSettings=()=>{},format=1,selectedChecker=-1,positionKey='',roomLive=false,pendingRoomId=new URL(location.href).searchParams.get('room');
 const copy=()=>({...communityCopy(language),...arcadeCopy(language)}),note=t=>{$('#gameStatus').textContent=t;};
 const available=r=>!!gameTypes[r.gameType]&&r.mode==='random'&&r.status==='waiting'&&r.player1Id!==user?.uid&&Date.now()-(r.heartbeatAt?.toMillis?.()||0)<90000;
 const adult=()=>!!user&&$('#gameAdultConfirmed').checked;
@@ -104,7 +104,7 @@ onAuthStateChanged(auth,async u=>{unsubs.forEach(fn=>fn());unsubs=[];closeRoom()
  if(auth.currentUser?.uid!==u.uid)return;
  unsubs.push(onSnapshot(query(collection(db,'arcadeRooms'),where('mode','==','random'),where('status','==','waiting'),limit(40)),{includeMetadataChanges:true},s=>{live=!s.metadata.fromCache;rooms=s.docs.map(d=>({id:d.id,...d.data()}));renderLobby();},()=>note(copy().loadError)));
  unsubs.push(onSnapshot(query(collection(db,'arcadeRooms'),where('participants','array-contains',u.uid),limit(50)),s=>{own=s.docs.map(d=>({id:d.id,...d.data()}));renderLobby();},()=>note(copy().loadError)));
- clock=setInterval(renderLobby,15000);const id=new URL(location.href).searchParams.get('room');if(id&&/^[A-Za-z0-9_-]{1,128}$/.test(id))openRoom(id);
+ clock=setInterval(renderLobby,15000);const id=pendingRoomId;pendingRoomId='';if(id&&/^[A-Za-z0-9_-]{1,128}$/.test(id))openRoom(id);
 });
 stopSettings=mountNotificationSettings($('#gameNotifications'),language);renderLobby();
 window.addEventListener('pagehide',()=>{clearInterval(clock);clearInterval(heartbeat);stopRoom();unsubs.forEach(fn=>fn());stopSettings();});
