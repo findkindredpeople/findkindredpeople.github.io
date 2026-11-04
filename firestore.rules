@@ -744,13 +744,17 @@ service cloud.firestore {
           && n.seriesRound == (o.wins1 == 3 || o.wins2 == 3 ? 1 : o.seriesRound+1))
         : !n.diff(o).affectedKeys().hasAny(['wins1','wins2','seriesRound']);
     }
+    function checkersForwardCapture(board,c,me) {
+      let col = c % 8;
+      let enemy = 3-me;
+      return me == 1
+        ? (c >= 16 && ((col >= 2 && board.get(string(c-9),0) == enemy && board.get(string(c-18),0) == 0)
+          || (col <= 5 && board.get(string(c-7),0) == enemy && board.get(string(c-14),0) == 0)))
+        : (c < 48 && ((col >= 2 && board.get(string(c+7),0) == enemy && board.get(string(c+14),0) == 0)
+          || (col <= 5 && board.get(string(c+9),0) == enemy && board.get(string(c+18),0) == 0)));
+    }
     function checkersCapture(board,kings,c,me) {
-      return ((me == 1 || c in kings) && c >= 16
-          && ((c % 8 >= 2 && board.get(string(c-9),0) == 3-me && board.get(string(c-18),0) == 0)
-            || (c % 8 <= 5 && board.get(string(c-7),0) == 3-me && board.get(string(c-14),0) == 0)))
-        || ((me == 2 || c in kings) && c < 48
-          && ((c % 8 >= 2 && board.get(string(c+7),0) == 3-me && board.get(string(c+14),0) == 0)
-            || (c % 8 <= 5 && board.get(string(c+9),0) == 3-me && board.get(string(c+18),0) == 0)));
+      return checkersForwardCapture(board,c,me) || (c in kings && checkersForwardCapture(board,c,3-me));
     }
     function checkersStep(board,kings,c,me) {
       return ((me == 1 || c in kings) && c >= 8
@@ -758,22 +762,38 @@ service cloud.firestore {
         || ((me == 2 || c in kings) && c < 56
           && ((c % 8 >= 1 && board.get(string(c+7),0) == 0) || (c % 8 <= 6 && board.get(string(c+9),0) == 0)));
     }
-    function checkersCanAct(board,kings,c,me,capturesOnly) {
-      return (!capturesOnly && checkersStep(board,kings,c,me)) || checkersCapture(board,kings,c,me);
+    function checkersAnyForward(board,tokens,me) {
+      return (tokens.size() > 0 && checkersForwardCapture(board,tokens[0],me))
+        || (tokens.size() > 1 && checkersForwardCapture(board,tokens[1],me))
+        || (tokens.size() > 2 && checkersForwardCapture(board,tokens[2],me))
+        || (tokens.size() > 3 && checkersForwardCapture(board,tokens[3],me))
+        || (tokens.size() > 4 && checkersForwardCapture(board,tokens[4],me))
+        || (tokens.size() > 5 && checkersForwardCapture(board,tokens[5],me))
+        || (tokens.size() > 6 && checkersForwardCapture(board,tokens[6],me))
+        || (tokens.size() > 7 && checkersForwardCapture(board,tokens[7],me))
+        || (tokens.size() > 8 && checkersForwardCapture(board,tokens[8],me))
+        || (tokens.size() > 9 && checkersForwardCapture(board,tokens[9],me))
+        || (tokens.size() > 10 && checkersForwardCapture(board,tokens[10],me))
+        || (tokens.size() > 11 && checkersForwardCapture(board,tokens[11],me));
+    }
+    function checkersAnyStep(board,kings,tokens,me) {
+      return (tokens.size() > 0 && checkersStep(board,kings,tokens[0],me))
+        || (tokens.size() > 1 && checkersStep(board,kings,tokens[1],me))
+        || (tokens.size() > 2 && checkersStep(board,kings,tokens[2],me))
+        || (tokens.size() > 3 && checkersStep(board,kings,tokens[3],me))
+        || (tokens.size() > 4 && checkersStep(board,kings,tokens[4],me))
+        || (tokens.size() > 5 && checkersStep(board,kings,tokens[5],me))
+        || (tokens.size() > 6 && checkersStep(board,kings,tokens[6],me))
+        || (tokens.size() > 7 && checkersStep(board,kings,tokens[7],me))
+        || (tokens.size() > 8 && checkersStep(board,kings,tokens[8],me))
+        || (tokens.size() > 9 && checkersStep(board,kings,tokens[9],me))
+        || (tokens.size() > 10 && checkersStep(board,kings,tokens[10],me))
+        || (tokens.size() > 11 && checkersStep(board,kings,tokens[11],me));
     }
     function checkersAny(board,kings,tokens,me,capturesOnly) {
-      return (tokens.size() > 0 && checkersCanAct(board,kings,tokens[0],me,capturesOnly))
-        || (tokens.size() > 1 && checkersCanAct(board,kings,tokens[1],me,capturesOnly))
-        || (tokens.size() > 2 && checkersCanAct(board,kings,tokens[2],me,capturesOnly))
-        || (tokens.size() > 3 && checkersCanAct(board,kings,tokens[3],me,capturesOnly))
-        || (tokens.size() > 4 && checkersCanAct(board,kings,tokens[4],me,capturesOnly))
-        || (tokens.size() > 5 && checkersCanAct(board,kings,tokens[5],me,capturesOnly))
-        || (tokens.size() > 6 && checkersCanAct(board,kings,tokens[6],me,capturesOnly))
-        || (tokens.size() > 7 && checkersCanAct(board,kings,tokens[7],me,capturesOnly))
-        || (tokens.size() > 8 && checkersCanAct(board,kings,tokens[8],me,capturesOnly))
-        || (tokens.size() > 9 && checkersCanAct(board,kings,tokens[9],me,capturesOnly))
-        || (tokens.size() > 10 && checkersCanAct(board,kings,tokens[10],me,capturesOnly))
-        || (tokens.size() > 11 && checkersCanAct(board,kings,tokens[11],me,capturesOnly));
+      return (!capturesOnly && checkersAnyStep(board,kings,tokens,me))
+        || checkersAnyForward(board,tokens,me)
+        || checkersAnyForward(board,kings.removeAll(kings.removeAll(tokens)),3-me);
     }
     function checkersDiagonal(f,t,distance) {
       return (int(t / 8) == int(f / 8)+distance || int(t / 8) == int(f / 8)-distance)
@@ -803,8 +823,8 @@ service cloud.firestore {
         && b.board.diff(a.board).affectedKeys() == (cap >= 0 ? [string(f),string(t),string(cap)] : [string(f),string(t)]).toSet()
         && !b.board.keys().hasAny([string(f)]) && b.board[string(t)] == a.turn
         && (cap < 0 || !b.board.keys().hasAny([string(cap)]))
-        && nextOwn.size() == own.size() && nextOwn.toSet() == own.removeAll([f]).concat([t]).toSet()
-        && nextOther.size() == other.size()-(cap >= 0 ? 1 : 0) && nextOther.toSet() == other.removeAll([cap]).toSet();
+        && nextOwn.size() == own.size() && t in nextOwn && nextOwn.removeAll([t]) == own.removeAll([f])
+        && nextOther == other.removeAll([cap]);
     }
     function checkersPromotes(a,b) {
       return !(b.lastFrom in a.kings) && (a.turn == 1 ? b.lastMove < 8 : b.lastMove >= 56);
