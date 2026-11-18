@@ -98,9 +98,29 @@ service cloud.firestore {
     function groupDocument(groupId) {
       return get(/databases/$(database)/documents/groups/$(groupId)).data;
     }
-    function validPostData(data) {
+    function validPostPoll(options) {
+      return options is list && (options.size() == 0 ||
+        (options.size() >= 2 && options.size() <= 4
+          && options.toSet().size() == options.size()
+          && validPostPollOption(options[0]) && validPostPollOption(options[1])
+          && (options.size() < 3 || validPostPollOption(options[2]))
+          && (options.size() < 4 || validPostPollOption(options[3]))));
+    }
+    function validPostPollOption(value) {
+      return value is string && value.size() >= 1 && value.size() <= 80;
+    }
+    function videoDocument(uid, collection, postId) {
+      return /databases/$(database)/documents/postVideos/$(uid)/$(collection)/$(postId);
+    }
+    function validVideoAttachment(path, collection, postId) {
+      return path == '' || (
+        path == 'postVideos/' + request.auth.uid + '/' + collection + '/' + postId
+        && existsAfter(videoDocument(request.auth.uid, collection, postId)));
+    }
+    function validPostData(data, collection, postId) {
       return data is map
-        && data.keys().hasOnly(['authorId','authorName','authorPhotoUrl','text','photoUrl','musicLink','createdAt','visibility','viewerIds'])
+        && data.keys().hasOnly(['authorId','authorName','authorPhotoUrl','text','photoUrl','musicLink','createdAt','visibility','viewerIds',
+            'category','sourceUrl','pollOptions','videoPath'])
         && data.authorId == request.auth.uid
         && data.authorName is string
         && data.authorName.size() >= 1
@@ -110,14 +130,20 @@ service cloud.firestore {
         && data.text is string
         && data.text.size() <= 2000
         && data.photoUrl is string
-        && data.photoUrl.size() <= 250000
+        && data.photoUrl.size() <= 740000
         && data.musicLink is string
         && data.musicLink.size() <= 1000
         && data.createdAt is int
         && data.get('visibility', 'all') in ['all','connections','only_me']
         && data.get('viewerIds', []) is list
         && data.get('viewerIds', []).size() <= 100
-        && (data.text.size() >= 1 || data.photoUrl.size() >= 1 || data.musicLink.size() >= 1);
+        && data.get('category', 'general') in ['general','news','fun','connections','games']
+        && data.get('sourceUrl', '') is string && data.get('sourceUrl', '').size() <= 1000
+        && (data.get('category', 'general') != 'news' || data.get('sourceUrl', '').matches('https://[^ /]+[.][^ /]+.*'))
+        && validPostPoll(data.get('pollOptions', []))
+        && (data.get('pollOptions', []).size() == 0 || data.text.size() >= 1)
+        && validVideoAttachment(data.get('videoPath', ''), collection, postId)
+        && (data.text.size() >= 1 || data.photoUrl.size() >= 1 || data.musicLink.size() >= 1 || data.get('videoPath', '') != '');
     }
     function limitedPostDocument(postId) {
       return get(/databases/$(database)/documents/limitedPosts/$(postId)).data;
@@ -190,6 +216,46 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if owner(uid) && validProfile();
+      allow delete: if owner(uid);
+    }
+    match /worldInvites/{code} {
+      function validInvite(data) {
+        return data.keys().hasOnly(['ownerId','updatedAt'])
+          && data.ownerId is string && owner(data.ownerId)
+          && code.matches('[a-f0-9]{24}') && data.updatedAt == request.time;
+      }
+      allow get: if signedIn()
+        && exists(/databases/$(database)/documents/profiles/$(resource.data.ownerId))
+        && get(/databases/$(database)/documents/profiles/$(resource.data.ownerId)).data.active == true
+        && notBlocked({'participants': [request.auth.uid, resource.data.ownerId]});
+      allow create: if signedIn() && validInvite(request.resource.data);
+      allow update: if signedIn() && owner(resource.data.ownerId)
+        && request.resource.data.ownerId == resource.data.ownerId && validInvite(request.resource.data);
+      allow delete: if signedIn() && (!exists(/databases/$(database)/documents/worldInvites/$(code)) || owner(resource.data.ownerId));
+    }
+    match /profileCovers/{uid} {
+      function validCover(data) {
+        return data.keys().hasOnly(['portrait','theme','zoom','offsetX','offsetY','updatedAt','headline','interestLabels'])
+          && data.portrait is string && data.portrait.size() <= 740000
+          && data.portrait.matches('data:image/webp;base64,[A-Za-z0-9+/=]+')
+          && data.theme in ['aquarium', 'forest', 'new_year', 'sunset', 'ocean', 'aurora', 'rain_city', 'sakura', 'cosmos', 'winter_forest', 'mountain_lake', 'fireflies', 'lavender', 'tropical', 'moonlight', 'neon_city', 'golden_hour', 'butterflies', 'rose_garden', 'desert', 'clouds', 'fireworks', 'cozy_rain', 'spring_meadow']
+          && (!('headline' in data) || (data.headline is string && data.headline.size() <= 80))
+          && (!('interestLabels' in data) || (data.interestLabels is list && data.interestLabels.size() <= 3
+            && (data.interestLabels.size() < 1 || (data.interestLabels[0] is string && data.interestLabels[0].size() <= 24))
+            && (data.interestLabels.size() < 2 || (data.interestLabels[1] is string && data.interestLabels[1].size() <= 24))
+            && (data.interestLabels.size() < 3 || (data.interestLabels[2] is string && data.interestLabels[2].size() <= 24))))
+          && data.zoom is number && data.zoom >= 0.65 && data.zoom <= 2.4
+          && data.offsetX is number && data.offsetX >= -0.55 && data.offsetX <= 0.55
+          && data.offsetY is number && data.offsetY >= -0.55 && data.offsetY <= 0.55
+          && data.updatedAt == request.time;
+      }
+      function profilePath() {
+        return /databases/$(database)/documents/profiles/$(uid);
+      }
+      allow get: if owner(uid) || (signedIn()
+        && exists(profilePath()) && get(profilePath()).data.active == true
+        && notBlocked({'participants': [request.auth.uid, uid]}));
+      allow create, update: if owner(uid) && existsAfter(profilePath()) && validCover(request.resource.data);
       allow delete: if owner(uid);
     }
     match /connections/{id} {
@@ -396,10 +462,112 @@ service cloud.firestore {
       allow delete: if gameParticipant(roomId);
     }
 
+    function pollParent(scope, pollId) {
+      return get(/databases/$(database)/documents/$(scope)/$(pollId)).data;
+    }
+    function readablePoll(scope, pollId) {
+      return signedIn() && (
+        (scope == 'daily' && pollId.matches('[0-9]{5}_question'))
+        || (scope in ['posts','limitedPosts']
+          && exists(/databases/$(database)/documents/$(scope)/$(pollId))
+          && pollParent(scope, pollId).get('pollOptions', []).size() >= 2
+          && (scope == 'posts' || canReadLimitedPost(pollId))));
+    }
+    function pollChoiceAllowed(scope, pollId, option) {
+      return option in ['0','1','2','3'] && (scope == 'daily'
+        || int(option) < pollParent(scope, pollId).pollOptions.size());
+    }
+    function acceptsVotesToday(scope, pollId) {
+      return scope != 'daily' || request.time.date() == timestamp.value(int(pollId.split('_')[0]) * 86400000);
+    }
+    function votePath(scope, pollId, uid) {
+      return /databases/$(database)/documents/feedPolls/$(scope)/items/$(pollId)/votes/$(uid);
+    }
+    function tallyPath(scope, pollId, option) {
+      return /databases/$(database)/documents/feedPolls/$(scope)/items/$(pollId)/counts/$(option);
+    }
+    function consentPath(scope, pollId, uid) {
+      return /databases/$(database)/documents/feedPolls/$(scope)/items/$(pollId)/matches/$(uid);
+    }
+    function previousTally(path) {
+      return exists(path) ? get(path).data.count : 0;
+    }
+    match /feedPolls/{scope}/items/{pollId}/votes/{uid} {
+      allow get: if readablePoll(scope, pollId) && request.auth.uid == uid;
+      allow create: if readablePoll(scope, pollId) && request.auth.uid == uid
+        && acceptsVotesToday(scope, pollId)
+        && request.resource.data.keys().hasOnly(['option','createdAt'])
+        && pollChoiceAllowed(scope, pollId, request.resource.data.option)
+        && request.resource.data.createdAt == request.time
+        && getAfter(tallyPath(scope, pollId, request.resource.data.option)).data.count
+          == previousTally(tallyPath(scope, pollId, request.resource.data.option)) + 1;
+    }
+    match /feedPolls/{scope}/items/{pollId}/counts/{option} {
+      allow read: if readablePoll(scope, pollId);
+      allow create, update: if readablePoll(scope, pollId)
+        && acceptsVotesToday(scope, pollId)
+        && pollChoiceAllowed(scope, pollId, option)
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count is int
+        && request.resource.data.count == previousTally(tallyPath(scope, pollId, option)) + 1
+        && !exists(votePath(scope, pollId, request.auth.uid))
+        && getAfter(votePath(scope, pollId, request.auth.uid)).data.option == option;
+    }
+    match /feedPolls/{scope}/items/{pollId}/matches/{uid} {
+      allow get: if readablePoll(scope, pollId) && request.auth.uid == uid;
+      allow list: if readablePoll(scope, pollId)
+        && request.query.limit <= 30
+        && exists(consentPath(scope, pollId, request.auth.uid))
+        && resource.data.option == get(consentPath(scope, pollId, request.auth.uid)).data.option;
+      allow create: if readablePoll(scope, pollId) && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['option'])
+        && request.resource.data.option == get(votePath(scope, pollId, uid)).data.option;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    function validVideoParent(uid, collection, postId, data) {
+      return data.authorId == uid && data.get('videoPath', '') == 'postVideos/' + uid + '/' + collection + '/' + postId;
+    }
+    function canReadVideo(uid, collection, postId) {
+      let parent = /databases/$(database)/documents/$(collection)/$(postId);
+      return signedIn() && collection in ['posts','limitedPosts'] && exists(parent)
+        && validVideoParent(uid, collection, postId, get(parent).data)
+        && (collection == 'posts' || canReadLimitedPost(postId));
+    }
+    function validVideoMeta(data) {
+      return data.keys().hasOnly(['size','parts','createdAt'])
+        && data.createdAt == request.time
+        && data.size is int && data.size > 0 && data.size <= 8388608
+        && data.parts is int && data.parts >= 1 && data.parts <= 9
+        && data.size > (data.parts - 1) * 983040 && data.size <= data.parts * 983040;
+    }
+    function validVideoChunk(uid, collection, postId, index) {
+      let metadata = getAfter(videoDocument(uid, collection, postId)).data;
+      let part = request.resource.data.data;
+      return metadata.createdAt == request.time && index < metadata.parts
+        && request.resource.data.keys().hasOnly(['data']) && part is bytes
+        && part.size() == (index == metadata.parts - 1 ? metadata.size - index * 983040 : 983040);
+    }
+    match /postVideos/{uid}/{collection}/{postId} {
+      allow get: if canReadVideo(uid, collection, postId);
+      allow create: if signedIn() && request.auth.uid == uid && collection in ['posts','limitedPosts']
+        && validVideoMeta(request.resource.data)
+        && validVideoParent(uid, collection, postId,
+          getAfter(/databases/$(database)/documents/$(collection)/$(postId)).data);
+      allow delete: if signedIn() && request.auth.uid == uid && collection in ['posts','limitedPosts'];
+
+      match /chunks/{chunkId} {
+        allow get: if canReadVideo(uid, collection, postId);
+        allow create: if signedIn() && request.auth.uid == uid && collection in ['posts','limitedPosts']
+          && chunkId.matches('[0-8]') && validVideoChunk(uid, collection, postId, int(chunkId));
+        allow delete: if signedIn() && request.auth.uid == uid && collection in ['posts','limitedPosts'];
+      }
+    }
+
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && validPostData(request.resource.data)
+        && validPostData(request.resource.data, 'posts', postId)
         && request.resource.data.get('visibility', 'all') == 'all'
         && request.resource.data.get('viewerIds', []).size() == 0;
       allow update: if false;
@@ -440,7 +608,7 @@ service cloud.firestore {
         && (resource.data.authorId == request.auth.uid
           || request.auth.uid in resource.data.viewerIds);
       allow create: if signedIn()
-        && validPostData(request.resource.data)
+        && validPostData(request.resource.data, 'limitedPosts', postId)
         && request.resource.data.visibility in ['connections','only_me']
         && request.resource.data.viewerIds.size() >= 1
         && request.auth.uid in request.resource.data.viewerIds

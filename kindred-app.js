@@ -1,3 +1,5 @@
+import {worldFromUrl,decodeWorld,encodeWorld} from './world-core.mjs';
+import {WORLD_COPY} from './world-copy.mjs';
 import {communityCopy,quickBiography,conversationStarters,allowsNotification,quickStartDefaults} from './community-upgrade.mjs';
 import {mountMeetingPolls,mountNotificationSettings,toggleDiscoveryAlert,currentNotificationPreferences} from './community-tools.js';
 import {referralCodeForUser,invitationUrl,captureReferral,pendingReferral,clearPendingReferral,newReferralAttribution} from "./referrals.mjs?v=20261103-1";
@@ -467,3 +469,34 @@ $("#languageSelect")?.addEventListener('change',refreshCommunitySettings);
 
 const showPanelBeforeCommunityUpgrade=showPanel;
 showPanel=panel=>{if(panel!=="messages")disposeMeetingPolls();return showPanelBeforeCommunityUpgrade(panel);};
+
+
+// A shared world stays available before and after sign-in. Connection requests still need consent.
+const sharedWorld=worldFromUrl(location.href);
+async function mountSharedWorld(){
+ let host=document.getElementById('sharedWorldInvitation');
+ if(!sharedWorld){host?.remove();return;}
+ if(!host){host=document.createElement('section');host.id='sharedWorldInvitation';host.className='notice';document.querySelector('.topbar').after(host);}
+ host.replaceChildren();
+ const lang=Object.hasOwn(WORLD_COPY,locale)?locale:'en',copy=WORLD_COPY[lang].strings;
+ const title=document.createElement('strong');title.textContent=copy.world_friend_card;
+ const compare=document.createElement('a');compare.className='button';compare.textContent=copy.world_questions_title;compare.href='world.html#world='+encodeWorld(sharedWorld);
+ host.append(title,document.createTextNode(' '),compare);
+ if(!state.user||!sharedWorld.referral)return;
+ const currentUid=state.user.uid;
+ try{
+  const invite=await getDoc(doc(db,'worldInvites',sharedWorld.referral));
+  const uid=invite.data()?.ownerId;if(!uid||uid===currentUid||state.user?.uid!==currentUid)return;
+  const profile=await getDoc(doc(db,'profiles',uid));if(!profile.exists()||!profile.data().active||state.user?.uid!==currentUid)return;
+  const button=document.createElement('button');button.className='button';button.textContent=copy.world_view_inviter;
+  button.onclick=()=>openProfilePreview(uid,profile.data());host.append(document.createTextNode(' '),button);
+ }catch{}
+}
+if(sharedWorld){
+ const mineValues=new URLSearchParams(location.search).getAll('mine');
+ const mine=mineValues.length===1?decodeWorld(mineValues[0]):null;
+ if(mine)try{localStorage.setItem('kindred_world_draft_v1',JSON.stringify({...mine,referral:null}));}catch{}
+ onAuthStateChanged(auth,()=>{void mountSharedWorld();});
+ document.getElementById('languageSelect')?.addEventListener('change',()=>{void mountSharedWorld();});
+ void mountSharedWorld();
+}
