@@ -4,7 +4,7 @@ import {WORLD_PALETTES,renderWorld} from './world-art.mjs';
 import {WorldGif} from './world-gif.mjs';
 
 const $=id=>document.getElementById(id),canvas=$('preview');
-const incoming=worldFromUrl(location.href);
+let incoming=worldFromUrl(location.href);
 let language=(incoming?.language??navigator.language?.split('-')[0]);if(!WORLD_LANGUAGES.includes(language))language='en';
 let draft={theme:'aurora',answers:Array(6).fill(-1),interests:[],referral:null,language};
 try{const saved=JSON.parse(localStorage.getItem('kindred_world_draft_v1'));if(validWorld(saved)){language=saved.language;draft={...saved,language,referral:null};}}catch{}
@@ -116,4 +116,5 @@ async function gif(share){
  }catch{status(text('world_save_error'));}finally{setBusy(false);}
 }
 $('shareGif').addEventListener('click',()=>gif(true));$('saveGif').addEventListener('click',()=>gif(false));
+window.addEventListener('hashchange',()=>{incoming=worldFromUrl(location.href);renderComparison();refreshLinks();});
 renderCopy();chooseTheme(draft.theme);raf=requestAnimationFrame(draw);
