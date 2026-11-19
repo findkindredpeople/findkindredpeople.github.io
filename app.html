@@ -19,8 +19,13 @@
   <link rel="stylesheet" href="trust.css?v=20260904-1">
   <link rel="stylesheet" href="friendship-type.css?v=20260904-1">
   <link rel="stylesheet" href="app-theme.css?v=20260910-1">
-  <script type="module" src="kindred-app.js?v=20261118-1"></script>
-<link rel="stylesheet" href="community-upgrade.css?v=20261104-1"></head>
+  <script type="module" src="kindred-app.js?v=20261119-avatar1"></script>
+<link rel="stylesheet" href="community-upgrade.css?v=20261104-1"><style>
+#liveAvatarDialog{width:min(950px,100vw);height:min(850px,96vh);max-width:100vw;max-height:100dvh;padding:0;border:0;border-radius:18px;background:#16141a;color:white}
+#liveAvatarDialog::backdrop{background:#17111cb3}
+#liveAvatarDialog iframe{width:100%;height:100%;border:0;display:block}
+@media(max-width:600px){#liveAvatarDialog{height:100dvh;width:100vw;margin:0;border-radius:0}}
+</style></head>
 <body>
   <header class="topbar">
     <a class="brand" href="index.html">Kindred ✦</a>
@@ -115,6 +120,7 @@
               <div class="profile-photo-preview" aria-hidden="true"><img id="profilePhotoPreview" alt="" hidden><span id="profilePhotoFallback">+</span></div>
               <label><span data-i18n="profilePhoto">Profile photo</span><input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp"><span class="hint" data-i18n="photoHint">Optional. JPG, PNG or WebP, up to 5 MB.</span></label>
             </div>
+            <button class="button secondary" type="button" id="openLiveAvatar">Live avatar</button>
             <label><span data-i18n="displayName">Display name</span><input id="displayName" minlength="2" maxlength="50" required></label>
             <div class="two"><label><span data-i18n="city">City</span><input id="profileCity" maxlength="80" required></label><label><span data-i18n="country">Country</span><input id="profileCountry" maxlength="80" required></label></div>
             <label><span data-i18n="shortIntro">Short introduction</span><textarea id="bio" minlength="30" maxlength="500" required data-i18n-placeholder="bioPlaceholder" placeholder="What kind of friendship and activities are you looking for?"></textarea></label>
@@ -133,6 +139,7 @@
     </div>
   </main><footer class="app-legal" style="padding:18px 20px 34px;text-align:center;font-size:14px"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="safety.html">Safety</a> · <a href="contact.html">Contact</a></footer>
 
+  <dialog id="liveAvatarDialog" aria-label="Live avatar"></dialog>
   <button id="quickConversations" class="quick-conversations" type="button" hidden aria-label="Conversations"><span class="quick-conversations-icon" aria-hidden="true">💬</span><span class="quick-conversations-label" data-i18n="conversations">Conversations</span><span id="quickConversationCount" class="notification-badge" hidden></span></button>
 
   <dialog id="profileDialog" class="profile-dialog"><div id="profileDialogContent"></div><form method="dialog" class="dialog-actions"><button id="closeProfileDialog" class="secondary">Close</button></form></dialog>

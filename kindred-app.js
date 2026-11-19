@@ -1,3 +1,4 @@
+import {isAvatarPhoto,mountAvatarStudio} from "./avatar-profile.mjs?v=1";
 import {worldFromUrl,decodeWorld,encodeWorld} from './world-core.mjs';
 import {WORLD_COPY} from './world-copy.mjs';
 import {communityCopy,quickBiography,conversationStarters,allowsNotification,quickStartDefaults} from './community-upgrade.mjs';
@@ -229,7 +230,7 @@ function openProfilePreview(uid,p){state.previewUid=uid;const copy=previewText()
 function updateCulturalLabels(){const c=cultureText(),s=safetyText(),values={culturalProfileTitle:c.title,culturalProfileIntro:c.intro,namePronunciationLabel:c.pronunciation,preferredContactTimeLabel:c.contactTime,comfortableTopicsLabel:c.topics,culturalContextLabel:c.context,blockedTitle:s.blocked,blockedIntro:s.blockedIntro};Object.entries(values).forEach(([id,value])=>{const el=$("#"+id);if(el)el.textContent=value});const pronunciation=$("#namePronunciation"),topics=$("#comfortableTopics"),context=$("#culturalContext");if(pronunciation)pronunciation.placeholder=c.pronunciationPlaceholder;if(topics)topics.placeholder=c.topicsPlaceholder;if(context)context.placeholder=c.contextPlaceholder;const select=$("#preferredContactTime");if(select)[...select.options].forEach(option=>option.textContent=c[option.value]||option.value);if(state.user&&state.currentPanel==="connections")loadBlockedManagement()}
 function captureOnboardingDraft(){const form=$("#onboardingStepForm");if(!form)return;const values=Object.fromEntries(new FormData(form));Object.assign(onboardingData,values);if(onboardingIndex===4)onboardingData.adultConfirmed=Boolean(values.adultConfirmed)}
 function refreshLocalizedDynamicViews(){renderConnections();renderConversationList();renderGrowingFriendships();renderFavoriteProfiles();if(!state.user)return;if(state.currentPanel==="discover")void loadProfiles();if(state.currentPanel==="messages"&&state.activeConnectionId){const connection=state.connections.find(item=>item.id===state.activeConnectionId);if(connection)openConversation(connection)}const dialog=$("#profileDialog");if(dialog?.open&&state.previewUid){const profile=state.profiles.get(state.previewUid);if(profile)openProfilePreview(state.previewUid,profile)}}
-function applyLanguage(next){if($("#onboarding")&&!$("#onboarding").hidden)captureOnboardingDraft();locale=translations[next]?next:"en";profileLoadRevision++;localStorage.setItem("kindred_app_language",locale);document.documentElement.lang=locale;document.documentElement.dir=locale==="ar"?"rtl":"ltr";$$('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));$$('[data-i18n-placeholder]').forEach(el=>el.placeholder=tr(el.dataset.i18nPlaceholder));updateChromeLabels();updateCulturalLabels();updateGrowingLabels();updateInviteLabels();updateFavoritesLabels();updateScheduleLabels();updatePassportProgress();updateOwnTrust();updateFriendshipType();if($("#onboarding")&&!$("#onboarding").hidden)renderOnboarding();$("#languageSelect").value=locale;$("#notificationBell").setAttribute("aria-label",tr("newPeopleNotifications"));$("#testNotificationSound").textContent=soundText().test;$("#installKindred").textContent=installText().button;updateInstallBanner();updateNotificationToggle();$("#authButton").textContent=state.user?tr("signOut"):tr("signIn");refreshLocalizedDynamicViews()}
+function applyLanguage(next){if($("#onboarding")&&!$("#onboarding").hidden)captureOnboardingDraft();locale=translations[next]?next:"en";profileLoadRevision++;localStorage.setItem("kindred_app_language",locale);document.documentElement.lang=locale;avatarStudio.refresh();document.documentElement.dir=locale==="ar"?"rtl":"ltr";$$('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));$$('[data-i18n-placeholder]').forEach(el=>el.placeholder=tr(el.dataset.i18nPlaceholder));updateChromeLabels();updateCulturalLabels();updateGrowingLabels();updateInviteLabels();updateFavoritesLabels();updateScheduleLabels();updatePassportProgress();updateOwnTrust();updateFriendshipType();if($("#onboarding")&&!$("#onboarding").hidden)renderOnboarding();$("#languageSelect").value=locale;$("#notificationBell").setAttribute("aria-label",tr("newPeopleNotifications"));$("#testNotificationSound").textContent=soundText().test;$("#installKindred").textContent=installText().button;updateInstallBanner();updateNotificationToggle();$("#authButton").textContent=state.user?tr("signOut"):tr("signIn");refreshLocalizedDynamicViews()}
 
 function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),3200)}
 function errorMessage(error){console.error(error);const code=error?.code||"";if(code.includes("popup-closed"))return tr("cancelledSignIn");if(code.includes("permission-denied"))return tr("permissionError");if(code.includes("failed-precondition"))return tr("firebaseSetting");return tr("genericError")}
@@ -237,7 +238,7 @@ function cleanList(value,max){return [...new Set(value.split(",").map(x=>x.trim(
 function pairId(a,b){return [a,b].sort().join("_")}
 function escapeText(value){const statusKey={pending:"statusPending",accepted:"statusAccepted",declined:"statusDeclined"}[value];const span=document.createElement("span");span.textContent=statusKey?tr(statusKey):(value||"");return span.innerHTML}
 function availabilityText(value){return tr({"Weekday evenings":"weekdayEvenings","Weekday daytime":"weekdayDaytime","Weekends":"weekends","Flexible":"flexible"}[value]||value)}
-function safePhoto(value){const v=String(value||"");return /^https:\/\//i.test(v)||/^data:image\/(?:jpeg|png|webp);base64,/i.test(v)?v:""}
+function safePhoto(value){const v=String(value||"");return isAvatarPhoto(v)?v:/^https:\/\//i.test(v)||/^data:image\/(?:jpeg|png|webp);base64,/i.test(v)?v:""}
 function updatePhotoPreview(value){const img=$("#profilePhotoPreview"),fallback=$("#profilePhotoFallback"),safe=safePhoto(value);if(!img||!fallback)return;img.hidden=!safe;fallback.hidden=!!safe;if(safe)img.src=safe;else img.removeAttribute("src")}
 function compressProfilePhoto(file){return new Promise((resolve,reject)=>{if(!["image/jpeg","image/png","image/webp"].includes(file.type))return reject(new Error("photo-invalid"));if(file.size>5*1024*1024)return reject(new Error("photo-too-large"));const reader=new FileReader();reader.onerror=()=>reject(new Error("photo-invalid"));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error("photo-invalid"));image.onload=()=>{const max=360,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.8))};image.src=reader.result};reader.readAsDataURL(file)})}
 async function chooseProfilePhoto(event){const file=event.target.files?.[0];if(!file)return;try{state.pendingPhotoURL=await compressProfilePhoto(file);updatePhotoPreview(state.pendingPhotoURL)}catch(error){event.target.value="";toast(tr(error.message==="photo-too-large"?"photoTooLarge":"photoInvalid"))}}
@@ -426,6 +427,30 @@ $$('[data-view]').forEach(x=>x.addEventListener("click",()=>showPanel(x.dataset.
 $$('[data-signin]').forEach(x=>x.addEventListener("click",signIn));
 $("#authButton").addEventListener("click",()=>state.user?signOut(auth):signIn());
 $("#quickConversations").addEventListener("click",()=>showPanel("messages"));
+const avatarStudio = mountAvatarStudio({
+  button: $("#openLiveAvatar"), dialog: $("#liveAvatarDialog"),
+  getUid: () => state.user?.uid, getPhoto: () => state.pendingPhotoURL || state.profile?.photoURL,
+  getLanguage: () => locale,
+  save: async (uid,gif) => {
+    if (!uid || uid !== auth.currentUser?.uid || uid !== state.user?.uid) throw new Error("account-changed");
+    const existing = !!state.profile;
+    if (existing) {
+      const ref = doc(db,"profiles",uid);
+      await runTransaction(db,async transaction=>{
+        const snapshot = await transaction.get(ref);
+        if (!snapshot.exists() || uid !== auth.currentUser?.uid) throw new Error("profile-unavailable");
+        transaction.update(ref,{photoURL:gif,updatedAt:serverTimestamp()});
+      });
+    }
+    if (uid !== state.user?.uid || uid !== auth.currentUser?.uid) throw new Error("account-changed");
+    if (existing) state.profile = {...state.profile,photoURL:gif};
+    state.pendingPhotoURL=gif;
+    updatePhotoPreview(gif);
+    return existing ? "saved" : "draft";
+  },
+  notify: message => toast(message || tr("profileSaved"))
+});
+let avatarEntryPending = new URLSearchParams(location.search).get("avatar") === "1";
 $("#profileForm").addEventListener("submit",saveProfile);
 $("#profileForm").addEventListener("input",()=>{updatePassportProgress();updateFriendshipType()});
 $("#onboardingActions").addEventListener("click",handleOnboardingAction);
@@ -451,7 +476,9 @@ if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.ser
 applyLanguage(new URLSearchParams(location.search).get("lang")||locale);
 
 let referralAuthInitialized=false;
-onAuthStateChanged(auth,async user=>{if(!referralAuthInitialized&&user){clearPendingReferral(referralStorage);currentPendingReferral=null}referralAuthInitialized=true;setKindredPushUser(user);void flushKindredPushOutbox(user);state.referralCode="";state.user=user;updateInviteLabels();$("#signedOut").hidden=!!user;$("#signedIn").hidden=!user;$("#notificationBell").hidden=!user;$("#enableBrowserNotifications").hidden=!user;$("#testNotificationSound").hidden=!user;$("#quickConversations").hidden=!user||state.currentPanel==="messages";updateNotificationToggle();$("#authButton").textContent=user?tr("signOut"):tr("signIn");state.unsubMessages?.();state.unsubConnections?.();state.unsubProfiles?.();clearMessageNotificationWatchers();state.unreadMessages.clear();updateUnreadMessageBadge();if(!user){state.profile=null;state.favorites=new Set();state.pendingPhotoURL="";state.profileWatchReady=false;state.seenProfileIds=new Set();state.newProfileCount=0;state.connectionWatchReady=false;state.incomingRequestIds=new Set();finishOnboarding();updateNotificationBadge();updateFavoritesLabels();updatePhotoPreview("");return}try{await savePrivateUser(user);await loadFavorites();await loadOwnProfile();watchConnections();watchNewProfiles();await loadProfiles()}catch(error){toast(errorMessage(error))}});
+onAuthStateChanged(auth,async user=>{if(!referralAuthInitialized&&user){clearPendingReferral(referralStorage);currentPendingReferral=null}referralAuthInitialized=true;setKindredPushUser(user);void flushKindredPushOutbox(user);state.referralCode="";state.user=user;avatarStudio.closeIfOwnerChanged();updateInviteLabels();$("#signedOut").hidden=!!user;$("#signedIn").hidden=!user;$("#notificationBell").hidden=!user;$("#enableBrowserNotifications").hidden=!user;$("#testNotificationSound").hidden=!user;$("#quickConversations").hidden=!user||state.currentPanel==="messages";updateNotificationToggle();$("#authButton").textContent=user?tr("signOut"):tr("signIn");state.unsubMessages?.();state.unsubConnections?.();state.unsubProfiles?.();clearMessageNotificationWatchers();state.unreadMessages.clear();updateUnreadMessageBadge();if(!user){state.profile=null;state.favorites=new Set();state.pendingPhotoURL="";state.profileWatchReady=false;state.seenProfileIds=new Set();state.newProfileCount=0;state.connectionWatchReady=false;state.incomingRequestIds=new Set();finishOnboarding();updateNotificationBadge();updateFavoritesLabels();updatePhotoPreview("");return}try{await savePrivateUser(user);await loadFavorites();await loadOwnProfile();if(avatarEntryPending && user.uid===state.user?.uid && state.profile){
+  avatarEntryPending=false;showPanel("profile");avatarStudio.open();
+}watchConnections();watchNewProfiles();await loadProfiles()}catch(error){toast(errorMessage(error))}});
 
 let disposeMeetingPolls=()=>{},disposeNotificationSettings=()=>{};
 function mountDiscoveryActions(){
