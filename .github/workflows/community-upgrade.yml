@@ -2,6 +2,10 @@ name: Kindred community upgrade
 on:
   push:
     branches: [codex/kindred-community-upgrade, codex/checkers-series]
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'tests/firestore/**'
   workflow_dispatch:
 permissions:
   contents: read
