@@ -192,6 +192,18 @@ service cloud.firestore {
     }
 
     match /users/{uid} { allow read, create, update, delete: if owner(uid); }
+
+    // Support processes outstanding requests with administrative credentials.
+    // The receipt survives deletion of the profile and Firebase Auth account.
+    match /accountDeletionRequests/{uid} {
+      allow get: if owner(uid);
+      allow create: if owner(uid)
+        && request.auth.token.auth_time is int
+        && request.auth.token.auth_time * 1000 >= request.time.toMillis() - 300000
+        && request.resource.data.keys().hasOnly(['requestedAt'])
+        && request.resource.data.requestedAt == request.time;
+    }
+
     match /presence/{uid} {
       allow read: if signedIn();
       allow create, update: if owner(uid)
@@ -238,7 +250,7 @@ service cloud.firestore {
         return data.keys().hasOnly(['portrait','theme','zoom','offsetX','offsetY','updatedAt','headline','interestLabels'])
           && data.portrait is string && data.portrait.size() <= 740000
           && data.portrait.matches('data:image/webp;base64,[A-Za-z0-9+/=]+')
-          && data.theme in ['aquarium', 'forest', 'new_year', 'sunset', 'ocean', 'aurora', 'rain_city', 'sakura', 'cosmos', 'winter_forest', 'mountain_lake', 'fireflies', 'lavender', 'tropical', 'moonlight', 'neon_city', 'golden_hour', 'butterflies', 'rose_garden', 'desert', 'clouds', 'fireworks', 'cozy_rain', 'spring_meadow']
+          && data.theme in ['aquarium', 'forest', 'new_year', 'sunset', 'ocean', 'aurora', 'rain_city', 'sakura', 'cosmos', 'winter_forest', 'mountain_lake', 'fireflies', 'lavender', 'tropical', 'moonlight', 'neon_city', 'golden_hour', 'butterflies', 'rose_garden', 'desert', 'clouds', 'fireworks', 'cozy_rain', 'spring_meadow', 'christmas_gold', 'christmas_snow', 'christmas_cozy']
           && (!('headline' in data) || (data.headline is string && data.headline.size() <= 80))
           && (!('interestLabels' in data) || (data.interestLabels is list && data.interestLabels.size() <= 3
             && (data.interestLabels.size() < 1 || (data.interestLabels[0] is string && data.interestLabels[0].size() <= 24))
@@ -267,9 +279,10 @@ service cloud.firestore {
         && request.resource.data.recipientId != request.auth.uid
         && request.resource.data.recipientId in request.resource.data.participants
         && (id == request.auth.uid + '_' + request.resource.data.recipientId || id == request.resource.data.recipientId + '_' + request.auth.uid)
-        && request.resource.data.status == 'pending';
+        && request.resource.data.status == 'pending' && notBlocked(request.resource.data);
       allow update: if (signedIn() && request.auth.uid == resource.data.recipientId
         && resource.data.status == 'pending' && request.resource.data.status in ['accepted','declined']
+        && (request.resource.data.status == 'declined' || notBlocked(resource.data))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt']))
         || (participant(resource.data) && resource.data.status == 'accepted'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['agreements','updatedAt'])

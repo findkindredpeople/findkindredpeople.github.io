@@ -145,3 +145,34 @@ test('conversation hiding is private, merges with user settings and can be resto
   assert.equal(restored.hiddenConversations.alice_bob,undefined);assert.equal(restored.fcmToken,'test-token');
   assert.equal(restored.hiddenConversations.other.toMillis(),1);
 });
+
+test('only the recently signed-in account can file its own one-time deletion request', async () => {
+  const current = Math.floor(Date.now() / 1000);
+  const owner = env.authenticatedContext('alice', { auth_time: current }).firestore();
+  const stale = env.authenticatedContext('alice', { auth_time: current - 600 }).firestore();
+  const receipt = 'accountDeletionRequests/alice';
+  const data = () => ({ requestedAt: serverTimestamp() });
+  await assertFails(setDoc(doc(stale, receipt), data()));
+  await assertFails(setDoc(ref('bob', receipt), data()));
+  await assertFails(setDoc(doc(owner, receipt), { ...data(), email: 'unexpected' }));
+  await assertSucceeds(setDoc(doc(owner, receipt), data()));
+  await assertSucceeds(getDoc(doc(owner, receipt)));
+  await assertFails(getDoc(ref('bob', receipt)));
+  await assertFails(getDoc(ref(null, receipt)));
+  await assertFails(getDocs(collection(owner, 'accountDeletionRequests')));
+  await assertFails(updateDoc(doc(owner, receipt), data()));
+  await assertFails(deleteDoc(doc(owner, receipt)));
+});
+
+test('blocked accounts cannot request or accept a connection in either direction', async () => {
+  const path = 'connections/alice_bob';
+  const request = { ...connection('pending'), createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  for (const [blocker, blocked] of [['alice', 'bob'], ['bob', 'alice']]) {
+    await env.clearFirestore();
+    await seed('blocks/' + blocker + '_' + blocked, { blockerId: blocker, blockedId: blocked, createdAt: Timestamp.now() });
+    await assertFails(setDoc(ref('alice', path), request));
+    await seed(path, connection('pending'));
+    await assertFails(updateDoc(ref('bob', path), { status: 'accepted', updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(ref('bob', path), { status: 'declined', updatedAt: serverTimestamp() }));
+  }
+});
