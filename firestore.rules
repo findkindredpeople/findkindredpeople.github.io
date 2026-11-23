@@ -250,7 +250,7 @@ service cloud.firestore {
         return data.keys().hasOnly(['portrait','theme','zoom','offsetX','offsetY','updatedAt','headline','interestLabels'])
           && data.portrait is string && data.portrait.size() <= 740000
           && data.portrait.matches('data:image/webp;base64,[A-Za-z0-9+/=]+')
-          && data.theme in ['aquarium', 'forest', 'new_year', 'sunset', 'ocean', 'aurora', 'rain_city', 'sakura', 'cosmos', 'winter_forest', 'mountain_lake', 'fireflies', 'lavender', 'tropical', 'moonlight', 'neon_city', 'golden_hour', 'butterflies', 'rose_garden', 'desert', 'clouds', 'fireworks', 'cozy_rain', 'spring_meadow']
+          && data.theme in ['aquarium', 'forest', 'new_year', 'sunset', 'ocean', 'aurora', 'rain_city', 'sakura', 'cosmos', 'winter_forest', 'mountain_lake', 'fireflies', 'lavender', 'tropical', 'moonlight', 'neon_city', 'golden_hour', 'butterflies', 'rose_garden', 'desert', 'clouds', 'fireworks', 'cozy_rain', 'spring_meadow', 'christmas_gold', 'christmas_snow', 'christmas_cozy']
           && (!('headline' in data) || (data.headline is string && data.headline.size() <= 80))
           && (!('interestLabels' in data) || (data.interestLabels is list && data.interestLabels.size() <= 3
             && (data.interestLabels.size() < 1 || (data.interestLabels[0] is string && data.interestLabels[0].size() <= 24))
